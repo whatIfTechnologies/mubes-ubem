@@ -27,7 +27,7 @@ import yaml
 import copy
 
 def giveReturnFromPool(results):
-    donothing = 0
+    doNothing = 0
     print(results)
 
 def Read_Arguments():
