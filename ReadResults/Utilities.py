@@ -378,20 +378,21 @@ def GetData(path,extravariables = [], Timeseries = [],BuildNum=[],BldList = []):
             Res['DB_Surf'].append(BuildObj.DB_Surf)
         except:
             Res['DB_Surf'].append(BuildObj.surface)
+            #Res['DB_Surf'].append(BuildObj.ATemp)
         eleval = 0
         for x in BuildObj.EPCMeters['ElecLoad']:
             if BuildObj.EPCMeters['ElecLoad'][x]:
                 eleval += BuildObj.EPCMeters['ElecLoad'][x]
-        Res['EPC_Elec'].append(eleval/BuildObj.DB_Surf if BuildObj.DB_Surf!=0 else 0)
+        Res['EPC_Elec'].append(eleval/Res['DB_Surf'][-1] if Res['DB_Surf'][-1]!=0 else 0)
         heatval = 0
         for x in BuildObj.EPCMeters['Heating']:
             heatval += BuildObj.EPCMeters['Heating'][x]
-        Res['EPC_Heat'].append(heatval/BuildObj.DB_Surf if BuildObj.DB_Surf!=0 else 0)
+        Res['EPC_Heat'].append(heatval/Res['DB_Surf'][-1] if Res['DB_Surf'][-1]!=0 else 0)
         coolval = 0
         for x in BuildObj.EPCMeters['Cooling']:
             coolval += BuildObj.EPCMeters['Cooling'][x]
-        Res['EPC_Cool'].append(coolval/BuildObj.DB_Surf if BuildObj.DB_Surf!=0 else 0)
-        Res['EPC_Tot'].append((eleval+heatval+coolval)/BuildObj.DB_Surf if BuildObj.DB_Surf!=0 else 0)
+        Res['EPC_Cool'].append(coolval/Res['DB_Surf'][-1] if Res['DB_Surf'][-1]!=0 else 0)
+        Res['EPC_Tot'].append((eleval+heatval+coolval)/Res['DB_Surf'][-1] if Res['DB_Surf'][-1]!=0 else 0)
 
 #forthe old way of doing things and the new paradigm for global results
         try:

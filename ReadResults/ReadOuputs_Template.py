@@ -267,8 +267,14 @@ if __name__ == '__main__' :
         path, Names4Plots,CaseNames = getPathList(config)
     print('[Studied Results Folder] '+str(Names4Plots))
     #Names (attributes) wanted to be taken in the pickle files for post-processing. The time series are agrregated into HeatedArea, NonHeatedArea and OutdoorSite
-    extraVar=['height','StoreyHeigth','nbfloor','BlocHeight','BlocFootprintArea','BlocNbFloor','HeatedArea','NonHeatedArea','OutdoorSite']
+    extraVar=['AreaBasedFlowRate','HeatedArea']
     #because we can have several path for several studies we want to overplot.
+
+    #Path can be written in hard for specific test
+    # path = ['C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\ecmnewcalibyearly\\build_5\\Sim_Results']
+    # path.append('C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\ecmnewcalibyearly\\build_25\\Sim_Results')
+    # path.append('C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\ecmnewcalibyearly\\build_39\\Sim_Results')
+    # CaseNames = ['5','25','39']
 
     Res = {}
     TimeSerieList=[]

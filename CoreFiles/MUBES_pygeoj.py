@@ -349,7 +349,7 @@ class Geometry:
             for polygon in Multipolygons:  # self._data['geometries'][0]['coordinates']:
                 try:
                     alt = [point[2] for point in polygon[0]]  #[point[-1] for point in polygon[0]]
-                    if max([abs(alt[i + 1] - val) for i, val in enumerate(alt[:-1])]) == 0:
+                    if max([abs(alt[i + 1] - val) for i, val in enumerate(alt[:-1])]) < 1e-5:
                         self._data['poly3rdcoord'].append(min([point[-1] for point in polygon[0]]))
                         self._data['coordinates'].append([[point[:2] for point in polygon[0]]])
                         x, y = zip(*self._data['coordinates'][0][-1])

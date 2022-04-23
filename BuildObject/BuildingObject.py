@@ -359,6 +359,7 @@ class Building:
         node2remove =[]
         BlocHeight = []
         BlocNbFloor = []
+        BlocAlt = []
         #we first need to check if it is Multipolygon
         if self.Multipolygon:
             #then we append all the floor and roof fottprints into one with associate height
@@ -379,7 +380,10 @@ class Building:
                                 skipit = True #no need to store the same polygone....
                         if not skipit:
                             coord.append(newpolycoor)
-                            BlocHeight.append(round(abs(DB.geometry.poly3rdcoord[idx1]-DB.geometry.poly3rdcoord[idx2+idx1+1]),1))
+                            #BlocHeight.append(round(abs(DB.geometry.poly3rdcoord[idx1]-DB.geometry.poly3rdcoord[idx2+idx1+1]),1))
+                            #thisis a workaround for upper building part being extruded form the lower level
+                            BlocHeight.append(max(DB.geometry.poly3rdcoord[idx1],DB.geometry.poly3rdcoord[idx2 + idx1 + 1])-min(DB.geometry.poly3rdcoord))
+                            BlocAlt.append(min(DB.geometry.poly3rdcoord[idx1],DB.geometry.poly3rdcoord[idx2+idx1+1]))
         else:
             #for dealing with 2D files
             singlepoly = False
@@ -411,6 +415,7 @@ class Building:
             for i in range(len(coord)):
                 BlocNbFloor.append(nbfloor)
                 BlocHeight.append(self.height)
+                BlocAlt.append(0)
 
         #if a polygonew has been seen alone, it means that it should be exruded down to the floor
         if self.Multipolygon:
@@ -423,6 +428,7 @@ class Building:
                     node2remove.append(node)
                     height = DB.geometry.poly3rdcoord[idx] if DB.geometry.poly3rdcoord[idx]>0 else self.height
                     BlocHeight.append(height)
+                    BlocAlt.append(0)
         # we need to clean the footprint from the node2remove but not if there are part of another bloc
         newbloccoor = []
         for idx, coor in enumerate(coord):
@@ -433,7 +439,7 @@ class Building:
                 single = True
                 for idx1, coor1 in enumerate(coord):
                     if idx != idx1:
-                        if coor[node] in coor1 and coor[node] not in [n for i, n in enumerate(coor1[idx1]) if
+                        if coor[node] in coor1 and coor[node] not in [n for i, n in enumerate(coor1) if
                                                                       i in node2remove[idx1]]:
                             single = False
                 if single:
@@ -445,6 +451,20 @@ class Building:
         coord = newbloccoor
         # these following lines are here to highlight holes in footprint and split it into two blocs...
         # it may appear some errors for other building with several blocs and some with holes (these cases havn't been checked)
+        #this a a last check of identical polygon after it has been clean from none usful nodes
+        if self.Multipolygon and 0 in MatchedPoly:
+            IdenticalPoly = []
+            for idx,poly in enumerate(coord):
+                for idx1,poly1 in enumerate(coord[idx+1:]):
+                    if GeomUtilities.chekIdenticalpoly(poly, poly1):
+                        IdenticalPoly.append([idx,idx+1+idx1])
+            for idx in IdenticalPoly:
+                coord.pop(idx[1])
+                BlocHeight[idx[0]] = abs(BlocHeight[idx[0]]-BlocHeight[idx[1]])
+                BlocHeight.pop(idx[1])
+                BlocAlt[idx[0]] = min(BlocAlt[idx[0]],BlocAlt[idx[1]])
+                BlocAlt.pop(idx[1])
+
         poly2merge = []
         for idx, coor in enumerate(coord):
             for i in range(len(coord) - idx - 1):
@@ -454,7 +474,7 @@ class Building:
                     poly2merge.append([idx + i + 1,idx])
         try:
             for i, idx in enumerate(poly2merge):
-                #lets check if it's a tower of smaller foorptin than the base:
+                #lets check if it's a tower of smaller footprint than the base:
                 SmallerTower = False
                 if BlocHeight[idx[1]]-BlocHeight[idx[0]]>0:
                     SmallerTower = True

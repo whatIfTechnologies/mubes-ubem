@@ -20,6 +20,10 @@ def RotatePolyOrder(poly):
     return poly[1:]+[poly[0]]
 
 def chekIdenticalpoly(poly1,poly2):
+    #polygon are considered identical if there veretx are closer then tolrenece in each coordintate
+    tolerance = 5
+    poly1 = [(round(v[0],tolerance),round(v[1],tolerance)) for v in poly1]
+    poly2 = [(round(v[0],tolerance),round(v[1],tolerance)) for v in poly2]
     Identical = False
     if poly1[-1]==poly1[0]:
         poly1 = poly1[:-1]
@@ -99,7 +103,7 @@ def CleanPoly(poly,DistTol):
         if len(polycoor) > 3:
             polycoor.remove(pt)
     newpolycoor, node = core_perim.CheckFootprintNodes(polycoor, 5) #the returned poly is not used finally investigation are to be done !
-    return polycoor, node
+    return polycoor, node #the cleaner newpolycoord cannot be used here as it can be attachedto someother blocs, so the nodes are kept only
 
 def mergeGeomeppy(poly,hole):
     poly = Polygon3D(poly)

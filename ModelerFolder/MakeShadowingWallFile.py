@@ -88,7 +88,8 @@ def CreatePolygonEnviro(GlobKey,config,WithBackSide = True):
         for bldNum, Bld in enumerate(DataBaseInput['Build']):
             print('\r', end='')
             print('--building '+str(bldNum) +' / '+str(Size), end='', flush=True)
-            BldObj = Building('Bld'+str(bldNum), DataBaseInput, bldNum, SimDir,keyPath['Buildingsfile'],LogFile=[],PlotOnly=True, DebugMode=False)
+            try: BldObj = Building('Bld'+str(bldNum), DataBaseInput, bldNum, SimDir,keyPath['Buildingsfile'],LogFile=[],PlotOnly=True, DebugMode=False)
+            except: continue
             BldObj = GrlFct.MakeAbsoluteCoord(BldObj,roundfactor=4)
             BldID = BldObj.BuildID[BldObj.BuildID['BldIDKey']]
             if WithBackSide:
@@ -293,7 +294,7 @@ def prepareElements(Data,FootKey):
         offset += j
     return NewBld,Matches
 
-def computMatchesWithbackSideSurfaces(Data,WithBackSide = True):
+def computMatchesWithbackSideSurfaces(Data,WithBackSide = True,ThresholdDist = 200):
     if WithBackSide:
         NewBld,Matches = prepareElements(Data,'FootPrint')
     else:
@@ -308,6 +309,9 @@ def computMatchesWithbackSideSurfaces(Data,WithBackSide = True):
             if Data['Bld_ID'][bldidx]==Data['Bld_ID'][bldidx1+offsetidx]:
                 continue #this means that we are looking at the same building (but two different blocs)
             #lets grab the coarse box around the building
+            Dist = Polygon(bld).centroid.distance(Polygon(bld1).centroid)
+            if Dist>ThresholdDist:
+                continue
             box = Polygon(bld1).minimum_rotated_rectangle
             bld1Box = [(x,y) for x,y in box.exterior.coords][:-1]  #[(min(x),min(y)),(min(x),max(y)),(max(x),max(y)),(max(x),min(y))]
             print('\r', end='')
