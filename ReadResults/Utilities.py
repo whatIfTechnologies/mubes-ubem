@@ -1,6 +1,6 @@
 #this file is just a tank of utilities for ploting stuff mainly.
 #It creates the figures and the plots
-import os
+import os,sys
 import pickle#5 as pickle
 #import pickle5
 import matplotlib.pyplot as plt
@@ -11,6 +11,44 @@ from sklearn.linear_model import LinearRegression
 from sklearn import metrics
 import pandas as pd
 
+def makePolyPlots(CaseChoices,Pool2Launch):
+    if CaseChoices['DataBaseInput']:
+        DataBaseInput = CaseChoices['DataBaseInput']['Build']
+    else:
+        print('[Config Error] : several geojson file are loaded with MakePolygonPlots, this configuration is not allowed yet, please select one single geojons file in the yml file')
+        sys.exit()
+    cpt = '--------------------'
+    cpt1 = '                    '
+    totalsize = len(Pool2Launch)
+    if not CaseChoices['MakePlotsPerBld']:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    for idx, Case in enumerate(Pool2Launch):
+        done = (idx + 1 ) / totalsize
+        print('\r', end='')
+        ptcplt = '.' if idx % 2 else ' '
+        msg = cpt[:int(20 * done)] + ptcplt + cpt1[int(20 * done):] + str(round(100 * done, 1))
+        print('Figure being completed by ' + msg + ' %', end='', flush=True)
+        if CaseChoices['MakePlotsPerBld']:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        BldObj = DataBaseInput[Case['BuildNum2Launch']]
+        coords = BldObj.geometry.coordinates
+        propreties = BldObj.properties
+        for poly in coords:
+            if len(poly) > 1:
+                poly2plot = poly
+            else:
+                poly2plot = poly[0]
+            x, y = zip(*poly2plot)
+            plt.plot(x, y, 'k.-')
+        if CaseChoices['MakePlotsPerBld']:
+            plt.title(str(CaseChoices['BldIDKey']) + ' : ' + str(
+                propreties[CaseChoices['BldIDKey']]) + ' / Building num in the file : ' + str(Case['BuildNum2Launch']))
+            ax.set_aspect('equal', adjustable='box')
+            plt.show()
+    ax.set_aspect('equal', adjustable='box')
+    plt.show()
 
 def CountAbovethreshold(Data,threshold):
     #give the length of data above a threshold, for hourly Data, it is number of Hrs above the threshold

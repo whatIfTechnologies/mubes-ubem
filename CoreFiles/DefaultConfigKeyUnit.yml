@@ -42,6 +42,7 @@
         PassBldObject: [bool]                         #[Bool] key word for reading only once the geojson file. but no launch through consol then for each bld
         RefBuildNum: [int,str]                         #[Int] building number (order of the GeoJson file) taken as a reference to pick other within the RefPerimeter distance. useful for large DataSets
         RefPerimeter: [int]                      #[int] Distance threshold for which all building farer then this threshold for the RefBuildNum are ignored
+        MakePolygonPlots : [bool]                #[Bool] Distance threshold for which all building farer then this threshold for the RefBuildNum are ignored
 3_SIM :
     #files are needed to be located in the eather folder of EnergyPlus asthe same path is used afterward to launch the simulation
     1_WeatherData :

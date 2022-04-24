@@ -278,7 +278,6 @@ class Building:
                 self.DB_Surf  = newATemp
         return SharedBld, VolumeCorRatio
 
-
     def getBEData(self,BE):
         for key in BE.keys():
             setattr(self, key, BE[key])
@@ -306,15 +305,11 @@ class Building:
 
     def getBuildID(self,DB,LogFile):
         BuildID={}
-        for key in self.GE['BuildIDKey']:
-            try:
-                BuildID[key] = DB.properties[key]
-                BuildID['BldIDKey'] = key
-                break
-            except: pass
-        if not BuildID:
+        Id, BuildID['BldIDKey'] = getDBValue(DB.properties, self.GE['BuildIDKey'])
+        if not BuildID['BldIDKey']:
             BuildID['BldIDKey'] = 'NoBldID'
             BuildID['NoBldID'] = 'NoBldID'
+        else: BuildID[BuildID['BldIDKey']] = Id
         msg = '[Bld ID] '+ 'BldIDKey'+' : ' + str(BuildID['BldIDKey']) + '\n'
         GrlFct.Write2LogFile(msg, LogFile)
         msg = '[Bld ID] '+ str(BuildID['BldIDKey'])+' : ' + str(BuildID[BuildID['BldIDKey']]) + '\n'
@@ -349,7 +344,7 @@ class Building:
             y = centroide[0][1]
         #ref = (round(x,8), round(y,8))
         offset = ((2*Polygon(self.AggregFootprint).area)**0.5)/8
-        ref = (x-offset, y-offset) #there might be not a true need for suche precision....
+        ref = (x-offset, y-offset) #there might be not a true need for such precision....
         return ref
 
     def getfootprint(self,DB,LogFile=[],nbfloor=0,DebugMode = False):
@@ -416,7 +411,6 @@ class Building:
                 BlocNbFloor.append(nbfloor)
                 BlocHeight.append(self.height)
                 BlocAlt.append(0)
-
         #if a polygonew has been seen alone, it means that it should be exruded down to the floor
         if self.Multipolygon:
             for idx,val in enumerate(MatchedPoly):

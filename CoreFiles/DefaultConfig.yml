@@ -6,7 +6,7 @@
     PATH_TO_RESULTS : ../../MUBES_SimResults/           #[Str] this is the main folder where the results will be stored. it will be created if not exists
     
 1_DATA :
-    PATH_TO_DATA : '../ModelerFolder/Minneberg_Buildings_v1.geojson'       #[Str] Input file or folder in case of several files
+    PATH_TO_DATA : ../ModelerFolder/Minneberg_Buildings_v1.geojson      #[Str] Input file or folder in case of several files
 
 2_CASE :
     0_GrlChoices :
@@ -42,6 +42,7 @@
         PassBldObject : True                   #[Bool] key word for reading only once the geojson file. but no launch through consol then for each bld
         RefBuildNum : None                      #[Int] building number (order of the GeoJson file) taken as a reference to pick other within the RefPerimeter distance. useful for large DataSets if None it will be ignored
         RefPerimeter : 500                      #[int] Distance threshold for which all building farer then this threshold for the RefBuildNum are ignored
+        MakePolygonPlots : False                #[Bool] Distance threshold for which all building farer then this threshold for the RefBuildNum are ignored
 3_SIM :
     #files are needed to be located in the eather folder of EnergyPlus asthe same path is used afterward to launch the simulation
     1_WeatherData :

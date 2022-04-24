@@ -9,6 +9,7 @@ import CoreFiles.Load_and_occupancy as Load_and_occupancy
 import CoreFiles.DomesticHotWater as DomesticHotWater
 import CoreFiles.MUBES_pygeoj as MUBES_pygeoj
 import CoreFiles.BuildFMUs as BuildFMUs
+import ReadResults.Utilities as Utilities
 from openpyxl import load_workbook
 import openturns as ot
 import shutil
@@ -135,6 +136,9 @@ def checkRefCoordinates(GeojsonFile):
 
 def ComputeDistance(v1,v2):
     return ((v2[0]-v1[0])**2+(v2[1]-v1[1])**2)**0.5
+
+def MakePolygonPlots(CaseChoices,Pool2Launch):
+    Utilities.makePolyPlots(CaseChoices,Pool2Launch)
 
 def MakeAbsoluteCoord(building,idf = [],roundfactor = 8):
     # we need to convert change the reference coordinate because precision is needed for boundary conditions definition:
