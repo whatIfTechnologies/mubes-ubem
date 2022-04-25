@@ -17,9 +17,8 @@ def read_yaml(file_path):
         config = yaml.safe_load(f)
     return config
 
-def check4localConfig(config,path):
+def check4localConfig(path):
     Liste = os.listdir(path)
-    new_config = config
     filefound = False
     msg = False
     for file in Liste:
@@ -33,8 +32,7 @@ def check4localConfig(config,path):
     if not filefound:
         localConfig = read_yaml(os.path.join(path, 'LocalConfig_Template.yml'))
         filefound =  os.path.join(path,'LocalConfig_Template.yml')
-    new_config, msg1 = ChangeConfigOption(config, localConfig)
-    return new_config, filefound, msg1 if not msg else msg
+    return localConfig, filefound, msg
 
 def ChangeConfigOption(config,localConfig):
     msg = False
@@ -181,23 +179,25 @@ def checkChoicesCombinations(config):
         return 'Choices combination issue', SepThreads
     return config,SepThreads
 
-def getConfig():
-    ConfigFromArg, Case2Launch = Read_Arguments()
+def getConfig(App = ''):
+    if App == 'Shadowing':
+        ConfigFromArg, Case2Launch, ShadeLim = Read_Arguments(App = App)
+    else:
+        ConfigFromArg, Case2Launch = Read_Arguments(App = App)
     config = read_yaml(os.path.join(os.path.dirname(os.getcwd()),'CoreFiles','DefaultConfig.yml'))
     configUnit = read_yaml(os.path.join(os.path.dirname(os.getcwd()), 'CoreFiles', 'DefaultConfigKeyUnit.yml'))
     if Case2Launch:
-        config, filefound, msg = check4localConfig(config, os.getcwd())
-        config['2_CASE']['0_GrlChoices']['CaseName'] = Case2Launch
+        localConfig4Path, filefound, msg = check4localConfig(os.getcwd())
         print(os.path.join(os.path.abspath(config['0_APP']['PATH_TO_RESULTS']), Case2Launch, 'ConfigFile.yml'))
         if os.path.isfile(
-                os.path.join(os.path.abspath(config['0_APP']['PATH_TO_RESULTS']), Case2Launch, 'ConfigFile.yml')):
+                os.path.join(os.path.abspath(localConfig4Path['0_APP']['PATH_TO_RESULTS']), Case2Launch, 'ConfigFile.yml')):
             localConfig = read_yaml(
-                os.path.join(os.path.abspath(config['0_APP']['PATH_TO_RESULTS']), Case2Launch, 'ConfigFile.yml'))
+                os.path.join(os.path.abspath(localConfig4Path['0_APP']['PATH_TO_RESULTS']), Case2Launch, 'ConfigFile.yml'))
             config, msg = ChangeConfigOption(config, localConfig)
             if msg: print(msg)
         else:
             print('[Unknown Case] the following folder was not found : ' + os.path.join(
-                os.path.abspath(config['0_APP']['PATH_TO_RESULTS']), Case2Launch))
+                os.path.abspath(localConfig4Path['0_APP']['PATH_TO_RESULTS']), Case2Launch))
             sys.exit()
     elif type(ConfigFromArg) == str:
         if ConfigFromArg[-4:] == '.yml':
@@ -212,7 +212,9 @@ def getConfig():
         if msg: print(msg)
         config['2_CASE']['0_GrlChoices']['OutputFile'] = 'Outputs4API.txt'
     else:
-        config,filefound,msg = check4localConfig(config, os.getcwd())
+        localConfig,filefound,msg = check4localConfig(os.getcwd())
+        if msg: print(msg)
+        config, msg = ChangeConfigOption(config, localConfig)
         if msg: print(msg)
         print('[Config Info] Config completed by ' + filefound)
     config = checkConfigUnit(config,configUnit)
@@ -237,6 +239,8 @@ def getConfig():
     keyPath = {'epluspath': epluspath, 'Buildingsfile': Buildingsfile, 'pythonpath': '', 'GeojsonProperties': ''}
     # this function makes the list of dictionnary with single input files if several are present inthe sample folder
     GlobKey, MultipleFiles = GrlFct.ListAvailableFiles(keyPath)
+    if App == 'Shadowing':
+        return GlobKey, config, ShadeLim
     # this function creates the full pool to launch afterward, including the file name and which buildings to simulate
     IDKeys = config['3_SIM']['GeomElement']['BuildIDKey']
     if MultipleFiles:
@@ -245,10 +249,11 @@ def getConfig():
                     GlobKey, IDKeys,CaseChoices['PassBldObject'],CaseChoices['RefBuildNum'],CaseChoices['RefPerimeter'])
     return CaseChoices,config, SepThreads,Pool2Launch,MultipleFiles
 
-def Read_Arguments():
+def Read_Arguments(App = ''):
     #these are defaults values:
     Config2Launch = []
     Case2Launch = []
+    ShadeLim =[]
     # Get command-line options.
     lastIdx = len(sys.argv) - 1
     currIdx = 1
@@ -266,8 +271,12 @@ def Read_Arguments():
             currIdx += 1
             Case2Launch = sys.argv[currIdx]
             return Config2Launch,Case2Launch
+        if (currArg.startswith('-ShadeLimits')):
+            currIdx += 1
+            ShadeLim = sys.argv[currIdx]
         currIdx += 1
-    return Config2Launch,Case2Launch
+    if App == 'Shadowing': return Config2Launch,Case2Launch, ShadeLim
+    else: return Config2Launch,Case2Launch
 
 def CreatePool2Launch(BldIDs,GlobKey,IDKeys,PassBldObject,RefBuildNum,RefDist):
     Pool2Launch = []

@@ -59,7 +59,8 @@ def createBuilding(LogFile,idf,building,perim,FloorZoning,ForPlots =False,DebugM
 
     # the shading walls around the building are created with the function below
     # these are used in the function that defines the boundary conditions
-    createShadings(building, idf)
+    #before ggoing trhough the matching surface identification, we need to make shading surfaces being adjanacencies...
+    createAdjacentWalls(building, idf)
     #this function enable to create all the boundary conditions for all surfaces
     try:
         # import time
@@ -90,7 +91,7 @@ def createBuilding(LogFile,idf,building,perim,FloorZoning,ForPlots =False,DebugM
 def createRapidGeomElem(idf,building):
     #envelop can be created now and allocated to the correct surfaces
     createEnvelope(idf, building)
-
+    createShadings(building, idf)
     #create parition walls
     #from EP9.2 there is a dedicated construction type (to be tried as well), but 'Fullexeterior' option is still required
     #see https://unmethours.com/question/42542/interior-air-walls-for-splitting-nonconvex-zones/
@@ -99,9 +100,26 @@ def createRapidGeomElem(idf,building):
     createAirwallsCstr(idf)
     return idf
 
+def createAdjacentWalls(building,idf):
+    for ii,sh in enumerate(building.shades):
+        if building.shades[sh]['distance'] == 0:
+            print('coucou')
+            print(building.name)
+            idf.add_shading_block(
+                name='Shading_'+sh,
+                coordinates=building.shades[sh]['Vertex'], #[GeomElement['VertexKey']],
+                height=building.shades[sh]['height'],
+                )
+            #Because adding a shading bloc creates two identical surfaces, lets remove one to avoid too big input files
+            newshade = idf.idfobjects["SHADING:SITE:DETAILED"]
+            for i in newshade:
+                if i.Name in ('Shading_'+sh+'_2'):
+                    idf.removeidfobject(i)
+    return idf
+
 def createShadings(building,idf):
     for ii,sh in enumerate(building.shades):
-        if building.shades[sh]['distance'] <= building.GE['MaxShadingDist']:
+        if building.shades[sh]['distance'] <= building.MaxShadingDist and building.shades[sh]['distance'] > 0:
             idf.add_shading_block(
                 name='Shading_'+sh,
                 coordinates=building.shades[sh]['Vertex'], #[GeomElement['VertexKey']],

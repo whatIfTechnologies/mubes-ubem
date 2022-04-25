@@ -16,6 +16,7 @@ import shutil
 import pickle
 import pyproj
 import numpy as np
+import json
 
 def appendBuildCase(StudiedCase,keypath,nbcase,DataBaseInput,MainPath,LogFile,PlotOnly = False, DebugMode = False):
     StudiedCase.addBuilding('Building'+str(nbcase),DataBaseInput,nbcase,MainPath,keypath,LogFile,PlotOnly, DebugMode)
@@ -74,16 +75,42 @@ def ReadGeoJsonFile(keyPath,toBuildPool = False):
     try:
         BuildObjectDict = ReadGeojsonKeyNames(keyPath['GeojsonProperties'])
         Buildingsfile = MUBES_pygeoj.load(keyPath['Buildingsfile'])
-        #Shadingsfile = MUBES_pygeoj.load(keyPath['Shadingsfile'])
         if not toBuildPool: Buildingsfile = checkRefCoordinates(Buildingsfile)
+        Shadingsfile = getShadowingFile(keyPath['Buildingsfile'])
         #if not toBuildPool: Shadingsfile = checkRefCoordinates(Shadingsfile)
-        return {'BuildObjDict':BuildObjectDict,'Build' :Buildingsfile}#, 'Shades': Shadingsfile}
+        return {'BuildObjDict':BuildObjectDict,'Build' :Buildingsfile, 'Shades': Shadingsfile}
     except:
         Buildingsfile = MUBES_pygeoj.load(keyPath['Buildingsfile'])
-        #Shadingsfile = MUBES_pygeoj.load(keyPath['Shadingsfile'])
         if not toBuildPool: Buildingsfile = checkRefCoordinates(Buildingsfile)
+        Shadingsfile = getShadowingFile(keyPath['Buildingsfile'])
         #if not toBuildPool: Shadingsfile = checkRefCoordinates(Shadingsfile)
-        return {'Build': Buildingsfile}#, 'Shades': Shadingsfile}
+        return {'Build': Buildingsfile, 'Shades': Shadingsfile}
+
+def getShadowingFile(BuildingFilePath):
+    Shadingsfile = []
+    JSONFile = []
+    GeJsonFile = []
+    BuildingFileName = os.path.basename(BuildingFilePath)
+    JSonTest = os.path.join(os.path.dirname(BuildingFilePath),
+                            BuildingFileName[:BuildingFileName.index('.')] + '_Walls.json')
+    GeoJsonTest = os.path.join(os.path.dirname(BuildingFilePath), BuildingFileName.replace('Buildings', 'Walls'))
+    GeoJsonTest1 = True if 'Walls' in GeoJsonTest else False
+    if os.path.isfile(JSonTest):
+        JSONFile = JSonTest
+    elif os.path.isfile(GeoJsonTest) and GeoJsonTest1:
+        GeJsonFile = GeoJsonTest
+    else:
+        msg = '[Prep. Info] No shadowing wall file found'
+    if JSONFile:
+        msg = '[Prep. Info] json shadowing walls file found'
+        with open(JSONFile) as json_file:
+            Shadingsfile = json.load(json_file)
+    if GeJsonFile:
+        msg = '[Prep. Info] Geojson shadowing walls file found'
+        Shadingsfile = MUBES_pygeoj.load(GeJsonFile)
+        Shadingsfile = checkRefCoordinates(Shadingsfile)
+    print(msg)
+    return Shadingsfile
 
 def ListAvailableFiles(keyPath):
     # reading the pathfiles and the geojsonfile
@@ -392,7 +419,7 @@ def AppendLogFiles(MainPath,BldIDKey):
         os.remove(os.path.join(MainPath, file2del))
 
 #def setChangedParam(building,ParamVal,VarName2Change,MainPath,Buildingsfile,Shadingsfile,nbcase,LogFile=[]):
-def setChangedParam(building, ParamVal, VarName2Change, MainPath, Buildingsfile, nbcase, LogFile=[]):
+def setChangedParam(building, ParamVal, VarName2Change, MainPath, DataBaseInput, nbcase, LogFile=[]):
     #there is a loop file along the variable name to change and if specific ation are required it should be define here
     # if the variable to change are embedded into several layer of dictionnaries than there is a need to make checks and change accordingly to the correct element
     # here are examples for InternalMass impact using 'InternalMass' keyword in the VarName2Change list to play with the 'WeightperZoneArea' parameter
@@ -421,8 +448,6 @@ def setChangedParam(building, ParamVal, VarName2Change, MainPath, Buildingsfile,
             setattr(building, var, exttmass)
         elif 'MaxShadingDist' in var:
             building.MaxShadingDist = round(ParamVal[varnum], roundVal)
-            #building.shades = building.getshade(Buildingsfile[nbcase], Shadingsfile, Buildingsfile,LogFile,PlotOnly = False)
-            building.shades = building.getshade(nbcase, Buildingsfile, LogFile,PlotOnly=False)
         elif 'IntLoadCurveShape' in var:
             building.IntLoadCurveShape = max(round(ParamVal[varnum], roundVal),1e-6)
             building.IntLoad = building.getIntLoad(MainPath, LogFile)

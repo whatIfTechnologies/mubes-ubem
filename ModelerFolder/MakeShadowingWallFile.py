@@ -39,30 +39,6 @@ def MakeIntermediateFig(bld, bld1, bldunit,StartingEdge, EndingEdge):
     plt.plot(x, y, 's-')
     plt.show()
 
-def Read_Arguments():
-    #these are defaults values:
-    Config2Launch = []
-    ShadeLim = []
-    # Get command-line options.
-    lastIdx = len(sys.argv) - 1
-    currIdx = 1
-    while (currIdx < lastIdx):
-        currArg = sys.argv[currIdx]
-        if (currArg.startswith('-CONFIG')):
-            currIdx += 1
-            Config2Launch = json.loads(sys.argv[currIdx])
-        if (currArg.startswith('-yml')):
-            currIdx += 1
-            Config2Launch = sys.argv[currIdx]
-        if (currArg.startswith('-geojson')):
-            currIdx += 1
-            Config2Launch = sys.argv[currIdx]
-        if (currArg.startswith('-ShadeLimits')):
-            currIdx += 1
-            ShadeLim = sys.argv[currIdx]
-        currIdx += 1
-    return Config2Launch, ShadeLim
-
 def CreatePolygonEnviro(GlobKey,config,WithBackSide = True):
     PolygonEnviro = {}
     MainPath = os.getcwd()
@@ -82,12 +58,12 @@ def CreatePolygonEnviro(GlobKey,config,WithBackSide = True):
         Edges2Store = {}
         NewEdges2Store = {}
         DataBaseInput = GrlFct.ReadGeoJsonFile(keyPath)
-        Size = len(DataBaseInput['Build'])-1
+        Size = len(DataBaseInput['Build'])
         print('Studying buildings file : '+os.path.basename(keyPath['Buildingsfile']))
         print('Urban Area under construction with:')
         for bldNum, Bld in enumerate(DataBaseInput['Build']):
             print('\r', end='')
-            print('--building '+str(bldNum) +' / '+str(Size), end='', flush=True)
+            print('--building '+str(bldNum+1) +' / '+str(Size), end='', flush=True)
             try: BldObj = Building('Bld'+str(bldNum), DataBaseInput, bldNum, SimDir,keyPath['Buildingsfile'],LogFile=[],PlotOnly=True, DebugMode=False)
             except: continue
             BldObj = GrlFct.MakeAbsoluteCoord(BldObj,roundfactor=4)
@@ -301,7 +277,7 @@ def computMatchesWithbackSideSurfaces(Data,WithBackSide = True,ThresholdDist = 2
         NewBld, Matches = prepareElements(Data, 'AggregFootPrint')
     for bldidx,bld in enumerate(NewBld[:-1]):
         print('\r', end='')
-        print('---' + str(round(100*bldidx/(len(NewBld)-1),1)) + ' % has been treated', end='', flush=True)
+        print('---' + str(round(100*(bldidx+1)/(len(NewBld)-1),1)) + ' % has been treated', end='', flush=True)
         offsetidx = bldidx +1
         for bldidx1, bld1 in enumerate(NewBld[offsetidx:]):
             if Data['BldNum'][bldidx1 + offsetidx] in [5] and Data['BldNum'][bldidx] in [0]:
@@ -437,54 +413,15 @@ def SaveAndWrite(Matches,Data):
 
 if __name__ == '__main__' :
     MainPath = os.getcwd()
-    ConfigFromArg, ShadeLim = Read_Arguments()
+
+    GlobKey, config, ShadeLim = setConfig.getConfig(App = 'Shadowing')
+
     WithBackSide = True
     ComputAllSurf = False #default is compute with backside surfaces
     if ShadeLim == 'AllSurf':
         ComputAllSurf = True
     elif ShadeLim == 'SimpleSurf':
         WithBackSide = False
-
-    config = setConfig.read_yaml(os.path.join(os.path.dirname(os.getcwd()),'CoreFiles','DefaultConfig.yml'))
-    configUnit = setConfig.read_yaml(
-        os.path.join(os.path.dirname(os.getcwd()), 'CoreFiles', 'DefaultConfigKeyUnit.yml'))
-    geojsonfile = False
-    if type(ConfigFromArg) == str and ConfigFromArg[-4:] == '.yml':
-        localConfig = setConfig.read_yaml(ConfigFromArg)
-        config = setConfig.ChangeConfigOption(config, localConfig)
-    elif type(ConfigFromArg) == str and ConfigFromArg[-8:] == '.geojson':
-        geojsonfile = True
-    elif ConfigFromArg:
-        config = setConfig.ChangeConfigOption(config, ConfigFromArg)
-    else:
-        config,filefound,msg = setConfig.check4localConfig(config, os.getcwd())
-        if msg: print(msg)
-        print('[Config Info] Config completed by ' + filefound)
-    config = setConfig.checkConfigUnit(config, configUnit)
-    if type(config) != dict:
-        print('[Config Error] Something seems wrong : \n' + config)
-        sys.exit()
-    config, SepThreads = setConfig.checkGlobalConfig(config)
-    if type(config) != dict:
-        print('[Config Error] Something seems wrong in : ' + config)
-        sys.exit()
-        # the config file is now validated, lets vreate a smaller dict that will called along the process
-
-
-    Key2Aggregate = ['0_GrlChoices', '1_SimChoices', '2_AdvancedChoices']
-    CaseChoices = {}
-    for key in Key2Aggregate:
-        for subkey in config['2_CASE'][key]:
-            CaseChoices[subkey] = config['2_CASE'][key][subkey]
-    if CaseChoices['Verbose']: print('[OK] Input config. info checked and valid.')
-    epluspath = config['0_APP']['PATH_TO_ENERGYPLUS']
-    #a first keypath dict needs to be defined to comply with the current paradigme along the code
-    Buildingsfile = os.path.abspath(config['1_DATA']['PATH_TO_DATA'])
-    keyPath =  {'epluspath': epluspath, 'Buildingsfile': Buildingsfile,'pythonpath': '','GeojsonProperties':''}
-    if geojsonfile:
-        keyPath['Buildingsfile'] = ConfigFromArg
-    #this function makes the list of dictionnary with single input files if several are present inthe sample folder
-    GlobKey, MultipleFiles = GrlFct.ListAvailableFiles(keyPath)
     #this function creates the full pool to launch afterward, including the file name and which buildings to simulate
     print('Urban Area is first build by aggregating all building in each geojson files')
     PolygonEnviro,Folders2Clean = CreatePolygonEnviro(GlobKey,config,WithBackSide = WithBackSide)

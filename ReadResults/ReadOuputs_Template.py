@@ -127,6 +127,20 @@ def plotDim(GlobRes,FigName,name):
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][2], varx, [Vol], 'Building', [name[nb]],
                                  'Volume (m3)', signe[nb])
 
+def plotShadingEffect(GlobRes,FigName,name):
+    refVar = '[''BuildID''][key]'
+    key = GlobRes[0]['BuildID'][0]['BldIDKey']
+    reference = [GlobRes[0]['BuildID'][i][key] for i in range(
+        len(GlobRes[0]['BuildID']))]  # we need this reference because some building are missing is somme simulation !!!
+    # definition of the reference for comparison
+    signe = ['.', 's', '>', '<', 'd', 'o', '.', 's', '>', '<', 'd', 'o']
+    for nb in GlobRes:
+        Res = GlobRes[nb]
+        varx = Res['MaxShadingDist']
+        vary = Res['EP_Heat']
+        Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][0], varx, [vary], 'Max Shading Distance (m)', [name[nb]],
+                                 'Heat Needs (kWh/m2)', signe[nb])
+
 
 
 def plotEnergy(GlobRes,FigName,name):
@@ -249,7 +263,10 @@ if __name__ == '__main__' :
     configUnit = setConfig.read_yaml(
         os.path.join(os.path.dirname(os.getcwd()), 'CoreFiles', 'DefaultConfigKeyUnit.yml'))
     LocalConfigPath = os.path.join(os.path.dirname(os.getcwd()),'ModelerFolder')
-    config, filefound, msg = setConfig.check4localConfig(config, LocalConfigPath)
+    localConfig, filefound, msg = setConfig.check4localConfig(LocalConfigPath)
+    if msg: print(msg)
+    config, msg = setConfig.ChangeConfigOption(config, localConfig)
+    if msg: print(msg)
     #config['2_CASE']['0_GrlChoices']['CaseName'] = 'Simple'
 
     if CaseNameArg:
@@ -258,7 +275,7 @@ if __name__ == '__main__' :
     elif type(ConfigFromArg) == str:
         if ConfigFromArg[-4:] == '.yml':
             localConfig = setConfig.read_yaml(ConfigFromArg)
-            config = setConfig.ChangeConfigOption(config, localConfig)
+            config, msg = setConfig.ChangeConfigOption(config, localConfig)
             path,Names4Plots,CaseNames = getPathList(config)
         else:
             print('[Unknown Argument] Please check the available options for arguments : -yml or -Case')
@@ -267,7 +284,7 @@ if __name__ == '__main__' :
         path, Names4Plots,CaseNames = getPathList(config)
     print('[Studied Results Folder] '+str(Names4Plots))
     #Names (attributes) wanted to be taken in the pickle files for post-processing. The time series are agrregated into HeatedArea, NonHeatedArea and OutdoorSite
-    extraVar=['AreaBasedFlowRate','HeatedArea']
+    extraVar=['AreaBasedFlowRate','HeatedArea','BlocFootprintArea','height','MaxShadingDist']
     #because we can have several path for several studies we want to overplot.
 
     #Path can be written in hard for specific test
@@ -281,7 +298,7 @@ if __name__ == '__main__' :
     TimeSerieUnit = []
     id =0
     for idx, curPath in enumerate(path):
-        print('Considering results from : '+CaseNames[idx])
+        print('Considering results from : '+Names4Plots[idx])
         Res[idx] = Utilities.GetData(curPath,extraVar)
         #lets grab the time series name (the chossen ouputs from EP).
         # /!\ the data are taken from the building number 0, thus if for example not an office type, the will be no occupant. Choose another building if needed
@@ -308,6 +325,9 @@ if __name__ == '__main__' :
     # this one gives the energy demand of heating with EPCs values
     EnergyFig = Utilities.createMultilFig('',2,linked=False)
     plotEnergy(Res, EnergyFig,Names4Plots)
+    #this one is the consumption depending on the shading distance (of course simulation should have been done before...)
+    # ShadingFig = Utilities.createMultilFig('',2,linked=False)
+    # plotShadingEffect(Res, ShadingFig,Names4Plots)
 
     #below, some timeseries are plotted, all time series available but only for building Simulation Number 0
     Figures={}

@@ -141,7 +141,7 @@ class Building:
         self.BlocHeight, self.BlocNbFloor, self.StoreyHeigth = self.EvenFloorCorrection(self.BlocHeight, self.nbfloor, self.BlocNbFloor, self.footprint, LogFile,DebugMode)
         self.EPHeatedArea = self.getEPHeatedArea(LogFile,DebugMode)
         self.AdjacentWalls = [] #this will be appended in the getshade function if any present
-        self.shades = self.getshade(nbcase, Buildingsfile,LogFile, PlotOnly=PlotOnly,DebugMode=DebugMode)
+        self.shades = self.getshade(nbcase, DataBaseInput,LogFile, PlotOnly=PlotOnly,DebugMode=DebugMode)
         self.Materials = config['3_SIM']['BaseMaterial']
         self.InternalMass = config['3_SIM']['InternalMass']
         self.MakeRelativeCoord(roundfactor = 4)# we need to convert into local coordinate in order to compute adjacencies with more precision than keeping thousand of km for x and y
@@ -161,6 +161,7 @@ class Building:
             #we define the internal load only if it's not for making picture
             self.IntLoad = self.getIntLoad(MainPath,LogFile,DebugMode)
             self.DHWInfos = self.getExtraEnergy(ExEn, MainPath)
+            self.MaxShadingDist = self.GE['MaxShadingDist']
             #if there are no cooling comsumption, lets considerer a set point at 50deg max
             # for key in self.EPCMeters['Cooling']:
             #     if self.EPCMeters['Cooling'][key]>0:
@@ -460,12 +461,21 @@ class Building:
                 BlocAlt.pop(idx[1])
 
         poly2merge = []
+        area2merge = []
         for idx, coor in enumerate(coord):
             for i in range(len(coord) - idx - 1):
                 if Polygon(coor).contains(Polygon(coord[idx + i + 1])):
                     poly2merge.append([idx, idx + i + 1])
+                    area2merge.append([Polygon(coor).area,Polygon(coord[idx + i + 1]).area])
                 if Polygon(coord[idx + i + 1]).contains(Polygon(coor)):
                     poly2merge.append([idx + i + 1,idx])
+                    area2merge.append([Polygon(coord[idx + i + 1]).area,Polygon(coor).area])
+        for i, c in enumerate(poly2merge):
+            for j, c1 in enumerate(poly2merge):
+                if c[0] == c1[1]:
+                    msg = '[Geom Cor] The building has three polygons inside one another...please check your input file \n'
+                    if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+                    return
         try:
             for i, idx in enumerate(poly2merge):
                 #lets check if it's a tower of smaller footprint than the base:
@@ -707,7 +717,7 @@ class Building:
                 shades[key]['distance'] = dist
         return shades
 
-    def getshade(self, nbcase, Buildingsfile,LogFile, PlotOnly=True, DebugMode=False):
+    def getshade(self, nbcase, DataBaseInput,LogFile, PlotOnly=True, DebugMode=False):
         "Get all the shading surfaces to be build for surrounding building effect"
         JSONFile = []
         GeJsonFile = []
@@ -728,14 +738,12 @@ class Building:
         if JSONFile:
             msg = '[Shadowing Info] Shadowing walls are taken from a json file\n'
             if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
-            with open(JSONFile) as json_file:
-                ShadowingWalls = json.load(json_file)
-            return self.getShadesFromJson(ShadowingWalls)
+            return self.getShadesFromJson(DataBaseInput['Shades'])
         if GeJsonFile:
             msg = '[Shadowing Info] Shadowing walls are taken from a GeoJson file\n'
             if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
-            Shadingsfile = MUBES_pygeoj.load(GeJsonFile)
-            Shadingsfile = GrlFct.checkRefCoordinates(Shadingsfile)
+            Shadingsfile = DataBaseInput['Shades']
+            Buildingsfile = DataBaseInput['Build']
             try:
                 GE = self.GE
                 shadesID = Buildingsfile[nbcase].properties[GE['ShadingIdKey']]

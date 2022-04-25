@@ -20,9 +20,12 @@ def makePolyPlots(CaseChoices,Pool2Launch):
     cpt = '--------------------'
     cpt1 = '                    '
     totalsize = len(Pool2Launch)
+    plot3d = False
+    if max(DataBaseInput[0].geometry.poly3rdcoord) > 0: plot3d = True
     if not CaseChoices['MakePlotsPerBld']:
         fig = plt.figure()
-        ax = fig.add_subplot(111)
+        if plot3d: ax = plt.axes(projection="3d")
+        else: ax = fig.add_subplot(111)
     for idx, Case in enumerate(Pool2Launch):
         done = (idx + 1 ) / totalsize
         print('\r', end='')
@@ -31,24 +34,63 @@ def makePolyPlots(CaseChoices,Pool2Launch):
         print('Figure being completed by ' + msg + ' %', end='', flush=True)
         if CaseChoices['MakePlotsPerBld']:
             fig = plt.figure()
-            ax = fig.add_subplot(111)
+            if plot3d: ax = plt.axes(projection="3d")
+            else: ax = fig.add_subplot(111)
         BldObj = DataBaseInput[Case['BuildNum2Launch']]
         coords = BldObj.geometry.coordinates
         propreties = BldObj.properties
-        for poly in coords:
+        for i,poly in enumerate(coords):
             if len(poly) > 1:
                 poly2plot = poly
             else:
                 poly2plot = poly[0]
             x, y = zip(*poly2plot)
-            plt.plot(x, y, 'k.-')
-        if CaseChoices['MakePlotsPerBld']:
+            if plot3d:
+                z = [BldObj.geometry.poly3rdcoord[i]]*len(x)
+                plt.plot(x, y,z, '.-')
+            else:
+                plt.plot(x, y, '.-')
+        if CaseChoices['MakePlotsPerBld'] or len(Pool2Launch)==1:
             plt.title(str(CaseChoices['BldIDKey']) + ' : ' + str(
-                propreties[CaseChoices['BldIDKey']]) + ' / Building num in the file : ' + str(Case['BuildNum2Launch']))
-            ax.set_aspect('equal', adjustable='box')
-            plt.show()
-    ax.set_aspect('equal', adjustable='box')
+                propreties[CaseChoices['BldIDKey']]) + ' / Building num in the file : ' + str(Case['BuildNum2Launch'])+
+                      '\n '+str(len(coords)) +' polygons found')
+            if plot3d: setPolygonPlotAxis(ax)
+            else: ax.set_aspect('equal', adjustable='box')
+        if CaseChoices['MakePlotsPerBld'] : plt.show()
+    if plot3d: setPolygonPlotAxis(ax)
+    else: ax.set_aspect('equal', adjustable='box')
+    if len(Pool2Launch)==1 and plot3d:
+        makeMultiPolyplots(DataBaseInput[Pool2Launch[0]['BuildNum2Launch']])
     plt.show()
+
+def makeMultiPolyplots(BldObj):
+    coords = BldObj.geometry.coordinates
+    for i, poly in enumerate(coords):
+        plt.figure()
+        ax = plt.axes(projection="3d")
+        if len(poly) > 1:
+            poly2plot = poly
+        else:
+            poly2plot = poly[0]
+        x, y = zip(*poly2plot)
+        z = [BldObj.geometry.poly3rdcoord[i]] * len(x)
+        plt.plot(x, y, z, '.-')
+        plt.title('Horizontal polygon found nb : '+str(i+1))
+        setPolygonPlotAxis(ax)
+
+
+
+def setPolygonPlotAxis(ax):
+    xlim = ax.get_xlim3d()
+    Rangex = xlim[1]-xlim[0]
+    ylim = ax.get_ylim3d()
+    Rangey = ylim[1] - ylim[0]
+    zlim = ax.get_zlim3d()
+    Rangez = zlim[1] - zlim[0]
+    range = max(Rangex,Rangey)
+    ax.set_xlim3d([xlim[0]-(range-Rangex)/2,xlim[1]+(range-Rangex)/2])
+    ax.set_ylim3d([ylim[0] - (range - Rangey) / 2, ylim[1] + (range - Rangey) / 2])
+    ax.set_zlim3d([zlim[0] - (range - Rangez) / 2, zlim[1] + (range - Rangez) / 2])
 
 def CountAbovethreshold(Data,threshold):
     #give the length of data above a threshold, for hourly Data, it is number of Hrs above the threshold

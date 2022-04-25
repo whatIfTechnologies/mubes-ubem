@@ -70,7 +70,6 @@ def LaunchProcess(SimDir,FirstRun,TotNbRun,currentRun,keyPath,nbcase,CorePerim,F
     if not DataBaseInput:
         # Buildingobjects from reading the geojson file as input for further functions if not given as arguments
         DataBaseInput = GrlFct.ReadGeoJsonFile(keyPath)
-    Buildingsfile = DataBaseInput['Build']
     epluspath = keyPath['epluspath']
     os.chdir(SimDir)
     start = time.time()
@@ -158,7 +157,7 @@ def LaunchProcess(SimDir,FirstRun,TotNbRun,currentRun,keyPath,nbcase,CorePerim,F
 
     if DebugMode: startIniti = time.time()
     if not MakePlotOnly: #in order to make parametric simulation, lets go along the VarName2Change list and change the building object attributes accordingly
-        GrlFct.setChangedParam(building, ParamVal, VarName2Change, MainPath, Buildingsfile, nbcase)
+        GrlFct.setChangedParam(building, ParamVal, VarName2Change, MainPath, DataBaseInput, nbcase)
 
     # lets assign the material and finalize the envelope definition
     try:
