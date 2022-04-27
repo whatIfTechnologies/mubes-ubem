@@ -133,6 +133,7 @@ class Building:
         self.nbBasefloor = self.getnbBasefloor(DB, DBL)
         self.height = self.getheight(DB, DBL)
         self.DistTol = self.GE['DistanceTolerance']
+        self.MaxShadingDist = self.GE['MaxShadingDist']
         self.footprint,  self.BlocHeight, self.BlocNbFloor = self.getfootprint(DB,LogFile,self.nbfloor,DebugMode)
         self.AggregFootprint = self.getAggregatedFootprint()
         self.RefCoord = self.getRefCoord()
@@ -145,6 +146,7 @@ class Building:
         self.Materials = config['3_SIM']['BaseMaterial']
         self.InternalMass = config['3_SIM']['InternalMass']
         self.MakeRelativeCoord(roundfactor = 4)# we need to convert into local coordinate in order to compute adjacencies with more precision than keeping thousand of km for x and y
+
         #self.edgesHeights = self.getEdgesHeights(roundfactor= 4)
         if not PlotOnly:
             #the attributres above are needed in all case, the one below are needed only if energy simulation is asked for
@@ -161,7 +163,7 @@ class Building:
             #we define the internal load only if it's not for making picture
             self.IntLoad = self.getIntLoad(MainPath,LogFile,DebugMode)
             self.DHWInfos = self.getExtraEnergy(ExEn, MainPath)
-            self.MaxShadingDist = self.GE['MaxShadingDist']
+
             #if there are no cooling comsumption, lets considerer a set point at 50deg max
             # for key in self.EPCMeters['Cooling']:
             #     if self.EPCMeters['Cooling'][key]>0:
@@ -362,11 +364,11 @@ class Building:
             MatchedPoly = [0]*len((DB.geometry.coordinates))
             for idx1,poly1 in enumerate(DB.geometry.coordinates[:-1]):
                 for idx2,poly2 in enumerate(DB.geometry.coordinates[idx1+1:]):
-                    if GeomUtilities.chekIdenticalpoly(poly1[0], poly2[0]) and  \
+                    if GeomUtilities.chekIdenticalpoly(poly1, poly2) and  \
                             round(abs(DB.geometry.poly3rdcoord[idx1]-DB.geometry.poly3rdcoord[idx2+idx1+1]),1) >0:
                         MatchedPoly[idx1] = 1
                         MatchedPoly[idx2+idx1+1] = 1
-                        newpolycoor,node = GeomUtilities.CleanPoly(poly1[0],DistTol)
+                        newpolycoor,node = GeomUtilities.CleanPoly(poly1,DistTol)
                         node2remove.append(node)
                          #polycoor.reverse()
                         #test of identical polygone maybe (encountered from geojon made out of skethup
@@ -483,9 +485,7 @@ class Building:
                 if BlocHeight[idx[1]]-BlocHeight[idx[0]]>0:
                     SmallerTower = True
                 newtry = False
-
                 if newtry :
-
                     newSurface = GeomUtilities.mergeHole(coord[idx[0]],coord[idx[1]])
                     coord[idx[0]] = newSurface[0]
                     coord[idx[1]] = newSurface[1]
@@ -603,7 +603,7 @@ class Building:
         try: DB_Surf = int(DB_Surf)
         except: DB_Surf = 1
         if DB_Surf == 1:
-            msg = '[Geom Error] Surface ID not recognized as number, fixed to 1\n'
+            msg = '[Geom Info] Surface ID not recognized as number, fixed to 1\n'
             if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         DB_Surf = checkLim(DB_Surf,DBL['surface_lim'][0],DBL['surface_lim'][1])
         self.DBSurfOriginal= DB_Surf     #this is to keep the original value as some correction might done afterward if more then 1 bld is present in 1 Id
@@ -804,7 +804,7 @@ class Building:
                     if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
                     continue
                 if OverlapCode== 999:
-                    msg = '[Shadowing Error] This Shading wall goes inside the building...It is dropped, shading Id : ' + ShadeWall[
+                    msg = '[Shadowing Info] This Shading wall goes inside the building...It is dropped, shading Id : ' + ShadeWall[
                               GE['ShadingIdKey']] + '\n'
                     #print(msg[:-1])
                     if DebugMode: GrlFct.Write2LogFile(msg, LogFile)

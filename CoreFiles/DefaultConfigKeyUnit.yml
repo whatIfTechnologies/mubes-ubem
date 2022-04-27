@@ -7,6 +7,7 @@
     
 1_DATA :
     PATH_TO_DATA : [str]       #Input file or folder in case of several files
+    EPSG_REF : [int,str]             #[int or 'None'], is 4326 for US East coast, 3950 for EU, some other for elsewhere
 
 2_CASE:
     0_GrlChoices :

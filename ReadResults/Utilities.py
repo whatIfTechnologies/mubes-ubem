@@ -6,27 +6,35 @@ import pickle#5 as pickle
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
+import CoreFiles.GeneralFunctions as GrlFct
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn import metrics
 import pandas as pd
 
 def makePolyPlots(CaseChoices,Pool2Launch):
-    if CaseChoices['DataBaseInput']:
-        DataBaseInput = CaseChoices['DataBaseInput']['Build']
-    else:
-        print('[Config Error] : several geojson file are loaded with MakePolygonPlots, this configuration is not allowed yet, please select one single geojons file in the yml file')
-        sys.exit()
+    forced2D = False
+    if CaseChoices['DataBaseInput']: Need2LoadFile = False
+    else : Need2LoadFile = True
     cpt = '--------------------'
     cpt1 = '                    '
     totalsize = len(Pool2Launch)
     plot3d = False
-    if max(DataBaseInput[0].geometry.poly3rdcoord) > 0: plot3d = True
-    if not CaseChoices['MakePlotsPerBld']:
-        fig = plt.figure()
-        if plot3d: ax = plt.axes(projection="3d")
-        else: ax = fig.add_subplot(111)
     for idx, Case in enumerate(Pool2Launch):
+        if Case['TotBld_and_Origin']:
+            if Need2LoadFile:
+                DataBaseInput = GrlFct.ReadGeoJsonFile(Case['keypath'], 3950, toBuildPool=True)
+                DataBase = DataBaseInput['Build']
+            else:
+                DataBaseInput = CaseChoices['DataBaseInput']
+                DataBase = DataBaseInput['Build']
+
+        if idx ==0:
+            if max(DataBase[0].geometry.poly3rdcoord) > 0 and not forced2D: plot3d = True
+            if not CaseChoices['MakePlotsPerBld']:
+                fig = plt.figure()
+                if plot3d: ax = plt.axes(projection="3d")
+                else: ax = fig.add_subplot(111)
         done = (idx + 1 ) / totalsize
         print('\r', end='')
         ptcplt = '.' if idx % 2 else ' '
@@ -36,7 +44,7 @@ def makePolyPlots(CaseChoices,Pool2Launch):
             fig = plt.figure()
             if plot3d: ax = plt.axes(projection="3d")
             else: ax = fig.add_subplot(111)
-        BldObj = DataBaseInput[Case['BuildNum2Launch']]
+        BldObj = DataBase[Case['BuildNum2Launch']]
         coords = BldObj.geometry.coordinates
         propreties = BldObj.properties
         for i,poly in enumerate(coords):
@@ -47,20 +55,23 @@ def makePolyPlots(CaseChoices,Pool2Launch):
             x, y = zip(*poly2plot)
             if plot3d:
                 z = [BldObj.geometry.poly3rdcoord[i]]*len(x)
-                plt.plot(x, y,z, '.-')
+                plt.plot(x, y,z, '-')
             else:
-                plt.plot(x, y, '.-')
+                plt.plot(x, y, '-')
         if CaseChoices['MakePlotsPerBld'] or len(Pool2Launch)==1:
-            plt.title(str(CaseChoices['BldIDKey']) + ' : ' + str(
-                propreties[CaseChoices['BldIDKey']]) + ' / Building num in the file : ' + str(Case['BuildNum2Launch'])+
-                      '\n '+str(len(coords)) +' polygons found')
+            try : titlemsg = str(CaseChoices['BldIDKey']) + ' : ' + str(
+                        propreties[CaseChoices['BldIDKey']])
+            except: titlemsg = 'No BldId found in the GeoJSON'
+            plt.title(titlemsg + ' / Building num in the file : ' + str(
+                        Case['BuildNum2Launch']) +
+                              '\n ' + str(len(coords)) + ' polygons found')
             if plot3d: setPolygonPlotAxis(ax)
             else: ax.set_aspect('equal', adjustable='box')
         if CaseChoices['MakePlotsPerBld'] : plt.show()
     if plot3d: setPolygonPlotAxis(ax)
     else: ax.set_aspect('equal', adjustable='box')
     if len(Pool2Launch)==1 and plot3d:
-        makeMultiPolyplots(DataBaseInput[Pool2Launch[0]['BuildNum2Launch']])
+        makeMultiPolyplots(DataBase[Pool2Launch[0]['BuildNum2Launch']])
     plt.show()
 
 def makeMultiPolyplots(BldObj):
@@ -79,11 +90,10 @@ def makeMultiPolyplots(BldObj):
         setPolygonPlotAxis(ax)
 
 
-
 def setPolygonPlotAxis(ax):
     xlim = ax.get_xlim3d()
-    Rangex = xlim[1]-xlim[0]
     ylim = ax.get_ylim3d()
+    Rangex = xlim[1]-xlim[0]
     Rangey = ylim[1] - ylim[0]
     zlim = ax.get_zlim3d()
     Rangez = zlim[1] - zlim[0]

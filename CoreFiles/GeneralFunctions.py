@@ -70,23 +70,23 @@ def readPathfile(Pathways):
                     keyPath[key] = os.path.normcase(line[line.find(':') + 1:-1])
     return keyPath
 
-def ReadGeoJsonFile(keyPath,toBuildPool = False):
+def ReadGeoJsonFile(keyPath,CoordSys,toBuildPool = False):
     #print('Reading Input files,...')
     try:
         BuildObjectDict = ReadGeojsonKeyNames(keyPath['GeojsonProperties'])
         Buildingsfile = MUBES_pygeoj.load(keyPath['Buildingsfile'])
-        if not toBuildPool: Buildingsfile = checkRefCoordinates(Buildingsfile)
-        Shadingsfile = getShadowingFile(keyPath['Buildingsfile'])
+        if not toBuildPool: Buildingsfile = checkRefCoordinates(Buildingsfile,CoordSys)
+        Shadingsfile = getShadowingFile(keyPath['Buildingsfile'],CoordSys)
         #if not toBuildPool: Shadingsfile = checkRefCoordinates(Shadingsfile)
         return {'BuildObjDict':BuildObjectDict,'Build' :Buildingsfile, 'Shades': Shadingsfile}
     except:
         Buildingsfile = MUBES_pygeoj.load(keyPath['Buildingsfile'])
-        if not toBuildPool: Buildingsfile = checkRefCoordinates(Buildingsfile)
-        Shadingsfile = getShadowingFile(keyPath['Buildingsfile'])
+        if not toBuildPool: Buildingsfile = checkRefCoordinates(Buildingsfile,CoordSys)
+        Shadingsfile = getShadowingFile(keyPath['Buildingsfile'],CoordSys)
         #if not toBuildPool: Shadingsfile = checkRefCoordinates(Shadingsfile)
         return {'Build': Buildingsfile, 'Shades': Shadingsfile}
 
-def getShadowingFile(BuildingFilePath):
+def getShadowingFile(BuildingFilePath,CoordSys):
     Shadingsfile = []
     JSONFile = []
     GeJsonFile = []
@@ -108,7 +108,7 @@ def getShadowingFile(BuildingFilePath):
     if GeJsonFile:
         msg = '[Prep. Info] Geojson shadowing walls file found'
         Shadingsfile = MUBES_pygeoj.load(GeJsonFile)
-        Shadingsfile = checkRefCoordinates(Shadingsfile)
+        Shadingsfile = checkRefCoordinates(Shadingsfile,CoordSys)
     print(msg)
     return Shadingsfile
 
@@ -140,26 +140,34 @@ def ReadGeoJsonDir(keyPath):
                     BuildingFiles.append(file)
     return BuildingFiles
 
-def checkRefCoordinates(GeojsonFile):
+def checkRefCoordinates(GeojsonFile,CoordSys):
     if not GeojsonFile:
         return GeojsonFile
-    if 'EPSG' in GeojsonFile.crs['properties']['name']:
-        return GeojsonFile
-    ##The coordinate system depends on the input file, thus, if specific filter or conversion from one to another,
-    # it should be done here
-    if "CRS84" in GeojsonFile.crs['properties']['name']:
-        print('Projecting coordinates of Input file,...')
-        transformer = pyproj.Transformer.from_crs("CRS84", "epsg:3950") #this transformation if done for the France's reference
-        for idx,obj in enumerate(GeojsonFile):
-            newCoord = []
-            for poly in obj.geometry.coordinates:
-                newpoly = []
-                for vertex in poly:
-                    newpoly.append(list(transformer.transform(vertex[0], vertex[1])))
-                newCoord.append(newpoly)
-            obj.geometry.coordinates = newCoord
-        return GeojsonFile
+    # if 'EPSG' in GeojsonFile.crs['properties']['name']:
+    #     return GeojsonFile
+    # ##The coordinate system depends on the input file, thus, if specific filter or conversion from one to another,
+    # # it should be done here
+    if type(CoordSys)==int:
+        GeojsonFile = MakeCoordConversion(GeojsonFile, CoordSys)
+    #GeojsonFile = MakeCoordConversion(GeojsonFile, CoordSys)
     return GeojsonFile
+
+def MakeCoordConversion(GeojsonFile,CoordSys):
+    print('Projecting coordinates of Input file,...')
+    transformer = pyproj.Transformer.from_crs("CRS84", "epsg:" + str(
+        CoordSys))  # this transformation if done for the France's reference
+    for idx, obj in enumerate(GeojsonFile):
+        newCoord = []
+        for poly in obj.geometry.coordinates:
+            newpoly = []
+            for vertex in poly:
+                newvertex = list(transformer.transform(vertex[0], vertex[1]))
+                newpoly.append(
+                    newvertex)  # the reversed list and this signe were added after looking at google map and the plot for boston city
+            newCoord.append(newpoly)
+        obj.geometry.coordinates = newCoord
+    return GeojsonFile
+
 
 def ComputeDistance(v1,v2):
     return ((v2[0]-v1[0])**2+(v2[1]-v1[1])**2)**0.5

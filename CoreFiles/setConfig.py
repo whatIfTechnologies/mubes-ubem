@@ -161,14 +161,16 @@ def checkParamtricSimCases(config):
                     errormsg = '/!\ Bounds must be [lower bound, upper bounds] in this order'
                     return errormsg,SepThreads
     if config['2_CASE']['1_SimChoices']['NbRuns'] > 1:
-        SepThreads = True
         if config['2_CASE']['2_AdvancedChoices']['CreateFMU']:
-            errormsg = '/!\ It is asked to ceate FMUs but more than one simulation per building is asked...'
+            errormsg = '/!\ It is asked to create FMUs but more than one simulation per building is asked...'
             return errormsg, SepThreads
         if not config['2_CASE']['1_SimChoices']['VarName2Change'] or not config['2_CASE']['1_SimChoices']['Bounds']:
             if not config['2_CASE']['2_AdvancedChoices']['FromPosteriors']:
                 errormsg = '/!\ It is asked to make several runs but no variable is specified with range of variation'
                 return errormsg, SepThreads
+        if config['2_CASE']['0_GrlChoices']['MakePlotsOnly']:
+            return errormsg, SepThreads
+        SepThreads = True
     return errormsg, SepThreads
 
 def checkChoicesCombinations(config):
@@ -243,10 +245,11 @@ def getConfig(App = ''):
         return GlobKey, config, ShadeLim
     # this function creates the full pool to launch afterward, including the file name and which buildings to simulate
     IDKeys = config['3_SIM']['GeomElement']['BuildIDKey']
+    CoordSys = config['1_DATA']['EPSG_REF']
     if MultipleFiles:
         CaseChoices['PassBldObject'] = False
     Pool2Launch, CaseChoices['BldID'], CaseChoices['DataBaseInput'], CaseChoices['BldIDKey'] = CreatePool2Launch(CaseChoices['BldID'],
-                    GlobKey, IDKeys,CaseChoices['PassBldObject'],CaseChoices['RefBuildNum'],CaseChoices['RefPerimeter'])
+                    GlobKey, IDKeys,CaseChoices['PassBldObject'],CaseChoices['RefBuildNum'],CaseChoices['RefPerimeter'],CoordSys)
     return CaseChoices,config, SepThreads,Pool2Launch,MultipleFiles
 
 def Read_Arguments(App = ''):
@@ -278,12 +281,15 @@ def Read_Arguments(App = ''):
     if App == 'Shadowing': return Config2Launch,Case2Launch, ShadeLim
     else: return Config2Launch,Case2Launch
 
-def CreatePool2Launch(BldIDs,GlobKey,IDKeys,PassBldObject,RefBuildNum,RefDist):
+def CreatePool2Launch(BldIDs,GlobKey,IDKeys,PassBldObject,RefBuildNum,RefDist,CoordSys):
     Pool2Launch = []
     NewUUIDList = []
     for nbfile,keyPath in enumerate(GlobKey):
         print('[Prep. Info] Reading GeoJson file...' )
-        DataBaseInput = GrlFct.ReadGeoJsonFile(keyPath,toBuildPool = True if not PassBldObject else False)
+        try : DataBaseInput = GrlFct.ReadGeoJsonFile(keyPath,CoordSys,toBuildPool = True if not PassBldObject else False)
+        except:
+            print('[Error] This input file failed to be loaded : '+str(keyPath['Buildingsfile']))
+            continue
         #check of the building to run
         idx = len(Pool2Launch)
         IdKey = 'NoBldID'
@@ -292,7 +298,7 @@ def CreatePool2Launch(BldIDs,GlobKey,IDKeys,PassBldObject,RefBuildNum,RefDist):
             IdKey = BuildIdKey
         print('[Prep. Info] Buildings will be considered with ID key : '+IdKey )
         ReducedArea = False
-        if RefBuildNum != 'None':
+        if type(RefBuildNum)==int:
             if RefBuildNum > len(DataBaseInput['Build']):
                 print('###  INPUT ERROR ### ')
                 print('/!\ RefBuildNum is greater than the number of object in the input GeoJson file...')

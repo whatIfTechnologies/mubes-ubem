@@ -7,6 +7,7 @@
     
 1_DATA :
     PATH_TO_DATA : ../ModelerFolder/Minneberg_Buildings_v1.geojson      #[Str] Input file or folder in case of several files
+    EPSG_REF : None                             #[int], is 4326 for US East coast, 3950 for EU, some other for elsewhere, leave None if no conversion is wanted
 
 2_CASE :
     0_GrlChoices :

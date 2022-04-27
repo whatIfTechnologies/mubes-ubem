@@ -336,8 +336,8 @@ class Geometry:
                     alt = [point[-1] for point in polygon[0]]
                     if max([abs(alt[i + 1] - val) for i, val in enumerate(alt[:-1])])==0:
                         self._data['poly3rdcoord'].append(min([point[-1] for point in polygon[0]]))
-                        self._data['coordinates'].append([[point[:2] for point in polygon[0]]])
-                        x, y = zip(*self._data['coordinates'][0][-1])
+                        self._data['coordinates'].append([point[:2] for point in polygon[0]])
+                        x, y = zip(*self._data['coordinates'][-1])
                         self._data['centroid'].append((round(sum(x) / len(x),1), round(sum(y) / len(y),1)))
             self._data.pop('geometries')
         elif len(self._data['coordinates'])>1 and type(self._data['coordinates'][0][0])==list:
@@ -351,14 +351,14 @@ class Geometry:
                     alt = [point[2] for point in polygon[0]]  #[point[-1] for point in polygon[0]]
                     if max([abs(alt[i + 1] - val) for i, val in enumerate(alt[:-1])]) < 1e-5:
                         self._data['poly3rdcoord'].append(min([point[-1] for point in polygon[0]]))
-                        self._data['coordinates'].append([[point[:2] for point in polygon[0]]])
-                        x, y = zip(*self._data['coordinates'][0][-1])
+                        self._data['coordinates'].append([point[:2] for point in polygon[0]])
+                        x, y = zip(*self._data['coordinates'][-1])
                         self._data['centroid'].append((round(sum(x) / len(x),1), round(sum(y) / len(y),1)))
                 except:
+                    if len(polygon[0]) > 2: polygon = polygon[0]
                     self._data['coordinates'].append(polygon)       #this exception has been done to eread the json file from https://data.agglo-lehavre.fr/api/v1/file/data/36/RG_BATIMENT_AGREGE_N2/json
                     self._data['poly3rdcoord'].append(0)
-                    if len(polygon[0])>2: x, y = zip(*polygon[0])
-                    else: x, y = zip(*polygon)
+                    x, y = zip(*polygon)
                     self._data['centroid'].append((round(sum(x) / len(x), 1), round(sum(y) / len(y), 1)))
                     #self.type = 'MultiPolygon'
         elif "type" not in self._data or "coordinates" not in self._data:
@@ -422,8 +422,10 @@ class Geometry:
                 if not len(exterior_or_holes) >= 3: raise Exception("The exterior and all holes in a Polygon must have at least 3 coordinates")
         elif self.type == "MultiPolygon":
             for eachmulti in coords:
-                for exterior_or_holes in eachmulti:
-                    if not len(exterior_or_holes) >= 3: raise Exception("The exterior and all holes in all Polygons of a MultiPolygon must have at least 3 coordinates")
+                if not len(eachmulti) >= 3: raise Exception(
+                    "The exterior and all holes in a Polygon must have at least 3 coordinates") #this change is made by xavFa bceause polygon and multipolygon keeps the same structure
+                # for exterior_or_holes in eachmulti:
+                #     if not len(exterior_or_holes) >= 3: raise Exception("The exterior and all holes in all Polygons of a MultiPolygon must have at least 3 coordinates")
 
         # validation successful
         return True
