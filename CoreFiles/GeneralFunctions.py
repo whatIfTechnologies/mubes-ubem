@@ -166,6 +166,7 @@ def MakeCoordConversion(GeojsonFile,CoordSys):
                     newvertex)  # the reversed list and this signe were added after looking at google map and the plot for boston city
             newCoord.append(newpoly)
         obj.geometry.coordinates = newCoord
+        obj.geometry.update_centroid()
     return GeojsonFile
 
 

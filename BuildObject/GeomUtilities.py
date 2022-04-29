@@ -19,9 +19,9 @@ def RotatePolyOrder(poly):
     #poly is a list of tuple or list of two coordinates
     return poly[1:]+[poly[0]]
 
-def chekIdenticalpoly(poly1,poly2):
+def chekIdenticalpoly(poly1,poly2,tolerance):
+
     #polygon are considered identical if there veretx are closer then tolrenece in each coordintate
-    tolerance = 5
     poly1 = [(round(v[0],tolerance),round(v[1],tolerance)) for v in poly1]
     poly2 = [(round(v[0],tolerance),round(v[1],tolerance)) for v in poly2]
     Identical = False
@@ -42,7 +42,20 @@ def chekIdenticalpoly(poly1,poly2):
         else:
             tries += 1
             poly2 = RotatePolyOrder(poly2)
+    if Identical == False:
+        Identical = ExtraCheck(poly1,poly2)
     return Identical
+
+def ExtraCheck(poly1,poly2):
+    Identical = False
+    poly1Shap = Polygon(poly1)
+    poly2Shap = Polygon(poly2)
+    if poly1Shap.contains(poly2Shap) or poly2Shap.contains(poly1Shap):
+        if abs(poly1Shap.area-poly2Shap.area)<1: #it means that either one of the other is contaned inside with less than 1m2 of difference
+            Identical = True
+    return Identical
+
+
 
 def mergeHole(poly,hole):
     #the two polygons needs to be in opposite direction to be merge into one with the hole
@@ -84,7 +97,7 @@ def mergeHole(poly,hole):
     final_poly2 = section_on_poly + section_on_hole
     return [final_poly1,final_poly2]
 
-def CleanPoly(poly,DistTol):
+def CleanPoly(poly,DistTol,roundVal):
     polycoor = []
     for j in poly:
         new = (j[0], j[1])
@@ -103,6 +116,7 @@ def CleanPoly(poly,DistTol):
         if len(polycoor) > 3:
             polycoor.remove(pt)
     newpolycoor, node = core_perim.CheckFootprintNodes(polycoor, 5) #the returned poly is not used finally investigation are to be done !
+    polycoor = [(round(point[0],roundVal),round(point[1],roundVal)) for point in polycoor]
     return polycoor, node #the cleaner newpolycoord cannot be used here as it can be attachedto someother blocs, so the nodes are kept only
 
 def mergeGeomeppy(poly,hole):

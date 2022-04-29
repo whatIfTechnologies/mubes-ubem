@@ -145,36 +145,37 @@ def checkParamtricSimCases(config):
     if len(config['2_CASE']['1_SimChoices']['VarName2Change']) > 0:
         if type(config['2_CASE']['1_SimChoices']['VarName2Change']) != list:
             errormsg = '/!\ The VarName2Change must be a list either empty or a list of strings'
-            return errormsg, SepThreads
+            return config,errormsg, SepThreads
         if len(config['2_CASE']['1_SimChoices']['VarName2Change']) > len(config['2_CASE']['1_SimChoices']['Bounds']) or \
                 len(config['2_CASE']['1_SimChoices']['VarName2Change']) > len(
             config['2_CASE']['1_SimChoices']['ParamMethods']):
             errormsg = '/!\ VarName2Change [list of str], Bounds [list of lists of float or int] and ParamMethods [list of str] must have the same length'
-            return errormsg,SepThreads
+            return config,errormsg,SepThreads
         else:
             for idx, key in enumerate(config['2_CASE']['1_SimChoices']['VarName2Change']):
                 if type(config['2_CASE']['1_SimChoices']['Bounds'][idx]) != list:
                     errormsg = '/!\ Bounds must be a list of lists of 2 values for each VarName2Change'
-                    return errormsg,SepThreads
+                    return config,errormsg,SepThreads
                 elif config['2_CASE']['1_SimChoices']['Bounds'][idx][1] < \
                         config['2_CASE']['1_SimChoices']['Bounds'][idx][0]:
                     errormsg = '/!\ Bounds must be [lower bound, upper bounds] in this order'
-                    return errormsg,SepThreads
+                    return config,errormsg,SepThreads
     if config['2_CASE']['1_SimChoices']['NbRuns'] > 1:
         if config['2_CASE']['2_AdvancedChoices']['CreateFMU']:
             errormsg = '/!\ It is asked to create FMUs but more than one simulation per building is asked...'
-            return errormsg, SepThreads
+            return config,errormsg, SepThreads
         if not config['2_CASE']['1_SimChoices']['VarName2Change'] or not config['2_CASE']['1_SimChoices']['Bounds']:
             if not config['2_CASE']['2_AdvancedChoices']['FromPosteriors']:
                 errormsg = '/!\ It is asked to make several runs but no variable is specified with range of variation'
-                return errormsg, SepThreads
+                return config,errormsg, SepThreads
         if config['2_CASE']['0_GrlChoices']['MakePlotsOnly']:
-            return errormsg, SepThreads
+            config['2_CASE']['1_SimChoices']['NbRuns'] = 1
+            return config,errormsg, SepThreads
         SepThreads = True
-    return errormsg, SepThreads
+    return config,errormsg, SepThreads
 
 def checkChoicesCombinations(config):
-    errormsg, SepThreads = checkParamtricSimCases(config)
+    config,errormsg, SepThreads = checkParamtricSimCases(config)
     if errormsg:
         print('###  INPUT ERROR ### ')
         print(errormsg)
@@ -294,7 +295,7 @@ def CreatePool2Launch(BldIDs,GlobKey,IDKeys,PassBldObject,RefBuildNum,RefDist,Co
         idx = len(Pool2Launch)
         IdKey = 'NoBldID'
         Id, BuildIdKey = BldFct.getDBValue(DataBaseInput['Build'][0].properties, IDKeys)
-        if Id:
+        if BuildIdKey:
             IdKey = BuildIdKey
         print('[Prep. Info] Buildings will be considered with ID key : '+IdKey )
         ReducedArea = False
@@ -317,13 +318,13 @@ def CreatePool2Launch(BldIDs,GlobKey,IDKeys,PassBldObject,RefBuildNum,RefDist,Co
             if not BldIDs:
                 try: BldID = Bld.properties[IdKey]
                 except: BldID = 'NoBldID'
-                Pool2Launch.append({'keypath': keyPath, 'BuildNum2Launch': bldNum,'BuildID':BldID ,'TotBld_and_Origin':'' })
+                Pool2Launch.append({'keypath': keyPath, 'BuildNum2Launch': bldNum,'BuildID':BldID ,'TotBld_and_Origin':'','CoordSys':CoordSys })
                 try: NewUUIDList.append(Bld.properties[IdKey])
                 except: pass
             else:
                 try:
                     if Bld.properties[IdKey] in BldIDs:
-                        Pool2Launch.append({'keypath': keyPath, 'BuildNum2Launch': bldNum,'BuildID':Bld.properties[IdKey], 'TotBld_and_Origin':'' })
+                        Pool2Launch.append({'keypath': keyPath, 'BuildNum2Launch': bldNum,'BuildID':Bld.properties[IdKey], 'TotBld_and_Origin':'','CoordSys':CoordSys })
                         NewUUIDList.append(Bld.properties[IdKey])
                 except: pass
         if not Pool2Launch:

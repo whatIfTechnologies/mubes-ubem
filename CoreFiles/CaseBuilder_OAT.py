@@ -113,7 +113,15 @@ def LaunchProcess(SimDir,FirstRun,TotNbRun,currentRun,keyPath,nbcase,CorePerim,F
                                            str(round(time.time()-startIniti,2))+' sec\n', LogFile)
         # The simulation parameters are assigned here
         if not MakePlotOnly:
-            GrlFct.setSimLevel(idf, building)
+            try: GrlFct.setSimLevel(idf, building)
+            except:
+                msg = '[Error] The SimLevel has failed...\n'
+                if Verbose: print(msg[:-1])
+                os.chdir(MainPath)
+                if FirstRun:
+                    GrlFct.Write2LogFile(msg, LogFile)
+                    GrlFct.Write2LogFile('##############################################################\n', LogFile)
+
         # The geometry is assigned here
         try:
             if DebugMode: startIniti = time.time()

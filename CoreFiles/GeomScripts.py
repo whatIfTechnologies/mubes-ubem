@@ -8,7 +8,7 @@ import CoreFiles.Envelope_Param as Envelope_Param
 import CoreFiles.GeneralFunctions as GrlFct
 import itertools
 
-def BuildBloc(idf,perim,bloc,bloc_coord,Height,nbstories,nbBasementstories,BasementstoriesHeight,Perim_depth):
+def BuildBloc(idf,perim,bloc,bloc_coord,Height,nbstories,nbBasementstories,BasementstoriesHeight,Perim_depth,altitude):
     if perim:
         idf.add_block(
             name='Build' + str(bloc),
@@ -26,6 +26,7 @@ def BuildBloc(idf,perim,bloc,bloc_coord,Height,nbstories,nbBasementstories,Basem
             name='Build' + str(bloc),
             coordinates=bloc_coord,
             height=Height,
+            # altitude = altitude,
             num_stories=nbstories + nbBasementstories,
             # building.nbfloor+building.nbBasefloor, #it defines the numbers of zones !
             below_ground_stories=nbBasementstories,
@@ -44,9 +45,11 @@ def createBuilding(LogFile,idf,building,perim,FloorZoning,ForPlots =False,DebugM
         BasementstoriesHeight = 2.5 if FloorZoning else 2.5*building.nbBasefloor
         Perim_depth = 3 #the perimeter depth is fixed to 3m and is reduced if some issue are encountered.
         matched = False
+        altitude = 0 #building.BlocAlt[bloc]
+        # Height -= min(building.BlocAlt)
         while not matched:
             try:
-                BuildBloc(idf, perim, bloc, bloc_coord, Height, nbstories, nbBasementstories, BasementstoriesHeight, Perim_depth)
+                BuildBloc(idf, perim, bloc, bloc_coord, Height, nbstories, nbBasementstories, BasementstoriesHeight, Perim_depth,altitude)
                 matched = True
             except:
                 Perim_depth = Perim_depth/2

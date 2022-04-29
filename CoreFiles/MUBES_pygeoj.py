@@ -235,10 +235,9 @@ class Geometry:
             elif self.type == "MultiLineString":
                 coordsgen = (point for line in self._data["coordinates"] for point in line)
             elif self.type == "Polygon":
-                coordsgen = (point for point in self._data["coordinates"][
-                    0])  # only the first exterior polygon should matter for bbox, not any of the holes
+                coordsgen = (point for point in self._data["coordinates"][0])
             elif self.type == "MultiPolygon":
-                coordsgen = (point[:2] for polygon in self._data["coordinates"] for point in polygon[0])  # only the first exterior polygon should matter for bbox, not any of the holes
+                coordsgen = (point[:2] for polygon in self._data["coordinates"] for point in polygon)  # changed made by xavFa after changing the multipolygon from list of list to single list
                 # coordsgen = (point for polygon in self._data["coordinates"] for point in polygon[0])  # only the first exterior polygon should matter for bbox, not any of the holes
             x, y = zip(*coordsgen)
             centroid = ((round(sum(x) / len(x), 1), round(sum(y) / len(y), 1)))
@@ -260,7 +259,7 @@ class Geometry:
             elif self.type == "Polygon":
                 coordsgen = (point for point in self._data["coordinates"][0]) # only the first exterior polygon should matter for bbox, not any of the holes
             elif self.type == "MultiPolygon":
-                coordsgen = (point[:2] for polygon in self._data["coordinates"] for point in polygon[0]) # only the first exterior polygon should matter for bbox, not any of the holes
+                coordsgen = (point[:2] for polygon in self._data["coordinates"] for point in polygon) # changed made by xavFa after changing the multipolygon from list of list to single list
                 #coordsgen = (point for polygon in self._data["coordinates"] for point in polygon[0])  # only the first exterior polygon should matter for bbox, not any of the holes
             try:
                 firstpoint = next(coordsgen)
@@ -340,7 +339,7 @@ class Geometry:
                         x, y = zip(*self._data['coordinates'][-1])
                         self._data['centroid'].append((round(sum(x) / len(x),1), round(sum(y) / len(y),1)))
             self._data.pop('geometries')
-        elif len(self._data['coordinates'])>1 and type(self._data['coordinates'][0][0])==list:
+        elif len(self._data['coordinates'])>1 and type(self._data['coordinates'][0][0])==list or self.type=='MultiPolygon':
             Multipolygons = self._data['coordinates']
             self._data.pop('coordinates')
             self._data['coordinates'] = []
@@ -355,7 +354,8 @@ class Geometry:
                         x, y = zip(*self._data['coordinates'][-1])
                         self._data['centroid'].append((round(sum(x) / len(x),1), round(sum(y) / len(y),1)))
                 except:
-                    if len(polygon[0]) > 2: polygon = polygon[0]
+                    if len(polygon[0]) > 2:
+                        polygon = polygon[0]
                     self._data['coordinates'].append(polygon)       #this exception has been done to eread the json file from https://data.agglo-lehavre.fr/api/v1/file/data/36/RG_BATIMENT_AGREGE_N2/json
                     self._data['poly3rdcoord'].append(0)
                     x, y = zip(*polygon)
@@ -422,7 +422,9 @@ class Geometry:
                 if not len(exterior_or_holes) >= 3: raise Exception("The exterior and all holes in a Polygon must have at least 3 coordinates")
         elif self.type == "MultiPolygon":
             for eachmulti in coords:
-                if not len(eachmulti) >= 3: raise Exception(
+                if not len(eachmulti) >= 3:
+                    print('tutu')
+                    raise Exception(
                     "The exterior and all holes in a Polygon must have at least 3 coordinates") #this change is made by xavFa bceause polygon and multipolygon keeps the same structure
                 # for exterior_or_holes in eachmulti:
                 #     if not len(exterior_or_holes) >= 3: raise Exception("The exterior and all holes in all Polygons of a MultiPolygon must have at least 3 coordinates")

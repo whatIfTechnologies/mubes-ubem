@@ -23,7 +23,7 @@ def makePolyPlots(CaseChoices,Pool2Launch):
     for idx, Case in enumerate(Pool2Launch):
         if Case['TotBld_and_Origin']:
             if Need2LoadFile:
-                DataBaseInput = GrlFct.ReadGeoJsonFile(Case['keypath'], 3950, toBuildPool=True)
+                DataBaseInput = GrlFct.ReadGeoJsonFile(Case['keypath'], Case['CoordSys'], toBuildPool=False)
                 DataBase = DataBaseInput['Build']
             else:
                 DataBaseInput = CaseChoices['DataBaseInput']
@@ -32,6 +32,7 @@ def makePolyPlots(CaseChoices,Pool2Launch):
         if idx ==0:
             if max(DataBase[0].geometry.poly3rdcoord) > 0 and not forced2D: plot3d = True
             if not CaseChoices['MakePlotsPerBld']:
+                # fig = plt.figure(figsize=(100,100))
                 fig = plt.figure()
                 if plot3d: ax = plt.axes(projection="3d")
                 else: ax = fig.add_subplot(111)
@@ -57,7 +58,7 @@ def makePolyPlots(CaseChoices,Pool2Launch):
                 z = [BldObj.geometry.poly3rdcoord[i]]*len(x)
                 plt.plot(x, y,z, '-')
             else:
-                plt.plot(x, y, '-')
+                plt.plot(x, y, '.-')
         if CaseChoices['MakePlotsPerBld'] or len(Pool2Launch)==1:
             try : titlemsg = str(CaseChoices['BldIDKey']) + ' : ' + str(
                         propreties[CaseChoices['BldIDKey']])
@@ -67,27 +68,33 @@ def makePolyPlots(CaseChoices,Pool2Launch):
                               '\n ' + str(len(coords)) + ' polygons found')
             if plot3d: setPolygonPlotAxis(ax)
             else: ax.set_aspect('equal', adjustable='box')
-        if CaseChoices['MakePlotsPerBld'] : plt.show()
+        if CaseChoices['MakePlotsPerBld'] and len(Pool2Launch)>1 : plt.show()
     if plot3d: setPolygonPlotAxis(ax)
     else: ax.set_aspect('equal', adjustable='box')
     if len(Pool2Launch)==1 and plot3d:
         makeMultiPolyplots(DataBase[Pool2Launch[0]['BuildNum2Launch']])
+    # fig.savefig('C:\\Users\\xav77\\Documents\\FAURE\\DataBase\\France\\Stockbis.eps', format='eps', dpi=1200)
     plt.show()
 
 def makeMultiPolyplots(BldObj):
     coords = BldObj.geometry.coordinates
+    h = np.unique([round(val,5) for val in BldObj.geometry.poly3rdcoord])
+    for i in range(len(h)):
+        plt.figure(i+2)
     for i, poly in enumerate(coords):
-        plt.figure()
-        ax = plt.axes(projection="3d")
+        fignum = np.where(h == round(BldObj.geometry.poly3rdcoord[i],5))[0]+2
+        fig = plt.figure(fignum)
+        ax = fig.add_subplot(111)
         if len(poly) > 1:
             poly2plot = poly
         else:
             poly2plot = poly[0]
         x, y = zip(*poly2plot)
-        z = [BldObj.geometry.poly3rdcoord[i]] * len(x)
-        plt.plot(x, y, z, '.-')
-        plt.title('Horizontal polygon found nb : '+str(i+1))
-        setPolygonPlotAxis(ax)
+        # z = [BldObj.geometry.poly3rdcoord[i]] * len(x)
+        plt.plot(x, y,'.-')#, z, '.-')
+        plt.title('Horizontal polygon found at altitude : '+str(round(BldObj.geometry.poly3rdcoord[i],5)))
+        ax.set_aspect('equal', adjustable='box')
+        #setPolygonPlotAxis(ax)
 
 
 def setPolygonPlotAxis(ax):
