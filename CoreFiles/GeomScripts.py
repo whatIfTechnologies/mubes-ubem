@@ -11,7 +11,7 @@ import itertools
 def BuildBloc(idf,perim,bloc,bloc_coord,Height,nbstories,nbBasementstories,BasementstoriesHeight,Perim_depth,altitude):
     if perim:
         idf.add_block(
-            name='Build' + str(bloc),
+            name='Build' + str(bloc) + '_Alt'+str(altitude),
             coordinates=bloc_coord,
             height=Height,
             num_stories=nbstories + nbBasementstories,
@@ -23,10 +23,10 @@ def BuildBloc(idf,perim,bloc,bloc_coord,Height,nbstories,nbBasementstories,Basem
         )
     else:
         idf.add_block(
-            name='Build' + str(bloc),
+            name='Build' + str(bloc) + '_Alt'+str(altitude),
             coordinates=bloc_coord,
             height=Height,
-            # altitude = altitude,
+            altitude = altitude,
             num_stories=nbstories + nbBasementstories,
             # building.nbfloor+building.nbBasefloor, #it defines the numbers of zones !
             below_ground_stories=nbBasementstories,
@@ -45,8 +45,7 @@ def createBuilding(LogFile,idf,building,perim,FloorZoning,ForPlots =False,DebugM
         BasementstoriesHeight = 2.5 if FloorZoning else 2.5*building.nbBasefloor
         Perim_depth = 3 #the perimeter depth is fixed to 3m and is reduced if some issue are encountered.
         matched = False
-        altitude = 0 #building.BlocAlt[bloc]
-        # Height -= min(building.BlocAlt)
+        altitude = building.BlocAlt[bloc] if ForPlots==1 else building.BlocAlt[bloc]-min(building.BlocAlt)
         while not matched:
             try:
                 BuildBloc(idf, perim, bloc, bloc_coord, Height, nbstories, nbBasementstories, BasementstoriesHeight, Perim_depth,altitude)
@@ -105,13 +104,13 @@ def createRapidGeomElem(idf,building):
 
 def createAdjacentWalls(building,idf):
     for ii,sh in enumerate(building.shades):
-        if building.shades[sh]['distance'] == 0:
+        if building.shades[sh]['distance'] == 0 and (building.shades[sh]['height']-min(building.BlocAlt))>0:
             print('coucou')
             print(building.name)
             idf.add_shading_block(
                 name='Shading_'+sh,
                 coordinates=building.shades[sh]['Vertex'], #[GeomElement['VertexKey']],
-                height=building.shades[sh]['height'],
+                height=building.shades[sh]['height']-min(building.BlocAlt),
                 )
             #Because adding a shading bloc creates two identical surfaces, lets remove one to avoid too big input files
             newshade = idf.idfobjects["SHADING:SITE:DETAILED"]
@@ -122,11 +121,11 @@ def createAdjacentWalls(building,idf):
 
 def createShadings(building,idf):
     for ii,sh in enumerate(building.shades):
-        if building.shades[sh]['distance'] <= building.MaxShadingDist and building.shades[sh]['distance'] > 0:
+        if building.shades[sh]['distance'] <= building.MaxShadingDist and building.shades[sh]['distance'] > 0 and  (building.shades[sh]['height']-min(building.BlocAlt))>0:
             idf.add_shading_block(
                 name='Shading_'+sh,
                 coordinates=building.shades[sh]['Vertex'], #[GeomElement['VertexKey']],
-                height=building.shades[sh]['height'],
+                height=building.shades[sh]['height']-min(building.BlocAlt),
                 )
             #Because adding a shading bloc creates two identical surfaces, lets remove one to avoid too big input files
             newshade = idf.idfobjects["SHADING:SITE:DETAILED"]
@@ -147,13 +146,13 @@ def createEnvelope(idf,building):
     Envelope_Param.createNewConstruction(idf, 'Project Heated1rstFloor Rev', 'Heated1rstFloor')
     # special loop to assign the construction that seperates the basement to the other storeis.
     for idx, zone in enumerate(idf.idfobjects["ZONE"]):
-        storey = int(zone.Name[zone.Name.find(
-            'Storey') + 6:])  # the name ends with Storey # so lets get the storey number this way
+        storey = int(zone.Name[zone.Name.find('Storey') + 6:])  # the name ends with Storey # so lets get the storey number this way
+        alt = float(zone.Name[zone.Name.find('_Alt') + 4:zone.Name.find('Storey')])
         sur2lookat = (s for s in zone.zonesurfaces if s.key not in ['INTERNALMASS'])
         for s in sur2lookat:
             if s.Surface_Type in 'ceiling' and storey == -1:  # which mean that we are on the basements just below ground
                 s.Construction_Name = 'Project Heated1rstFloor Rev'  #this will enable to reverse the construction for the cieling compared to the floor of the adjacent zone
-            if s.Surface_Type in 'floor' and storey == 0:  # which mean that we are on the first floors just above basement this states that whether or not there is basement zone, the floor slab is defined by this layer
+            if s.Surface_Type in 'floor' and storey == 0 and int(alt)==0:  # which mean that we are on the first floors just above basement this states that whether or not there is basement zone, the floor slab is defined by this layer
                 s.Construction_Name = 'Project Heated1rstFloor'
     #for all construction, see if some other material than default exist
     cstr = idf.idfobjects['CONSTRUCTION']

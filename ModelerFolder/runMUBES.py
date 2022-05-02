@@ -149,6 +149,7 @@ if __name__ == '__main__' :
                     f.write(msg+'\n')
 
     if CaseChoices['MakePlotsOnly']:
+        MakePlotOnly = 2 if CaseChoices['MakePlotsPerBld'] else 1
         FigCenter = []
         WindSize = 50
         totalsize = 0
@@ -163,7 +164,7 @@ if __name__ == '__main__' :
                 done = (file_idx+nbfile+1+offset)/totalsize
                 lastBld = True if done==1 and nbfile+1 == len(File2Launch) else False
                 BldObj,IDFObj,Check = CB_OAT.LaunchOAT(CaseChoices, file['SimDir'], file['keypath'], file['nbBuild'], [1], 0,
-                                                      pythonpath,MakePlotOnly = CaseChoices['MakePlotsOnly'])
+                                                      pythonpath,MakePlotOnly = MakePlotOnly)
                 if CaseChoices['Verbose']:
                     print('Figure being completed by ' + str(round(100 * done, 1)) + ' %')
                 else:

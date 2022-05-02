@@ -12,11 +12,27 @@ import os
 import json
 import shutil
 import BuildObject.GeomUtilities as GeomUtilities
-import re
+import re, itertools
 import CoreFiles.ProbGenerator as ProbGenerator
 
 import matplotlib.pyplot as plt
 #this class defines the building characteristics regarding available data in the geojson file
+
+def Makeplot(poly):
+    import matplotlib.pyplot as plt
+    x,y = zip(*poly)
+    plt.plot(x,y,'.-')
+
+def getBlocMatches(BlocAlt,BlocMaxAlt,AltTolerance):
+    BlocAltMAtches = []
+    for i, alt in enumerate(BlocAlt):
+        for j, maxAlt in enumerate(BlocMaxAlt):
+            if abs(alt - maxAlt) < AltTolerance:
+                BlocAltMAtches.append([i + 1, j + 1])
+                break
+        try: BlocAltMAtches[i]
+        except: BlocAltMAtches.append([i + 1, []])
+    return BlocAltMAtches
 
 #function that checks if value is out of limits
 def checkLim(val, ll, ul):
@@ -118,6 +134,7 @@ class Building:
         SD = config['3_SIM']['2_SimuData']
         ExEn = config['3_SIM']['ExtraEnergy']
         WeatherData = config['3_SIM']['1_WeatherData']
+
         try:
             self.CRS = Buildingsfile.crs['properties']['name'] #this is the coordinates reference system for the polygons
         except:
@@ -134,21 +151,22 @@ class Building:
         self.height = self.getheight(DB, DBL)
         self.DistTol = self.GE['DistanceTolerance']
         self.roundVal = self.GE['VertexPrecision']
+        self.AltTolerance = self.GE['AltitudeTolerance']
         self.MaxShadingDist = self.GE['MaxShadingDist']
-        self.footprint,  self.BlocHeight, self.BlocNbFloor, self.BlocAlt = self.getfootprint(DB,LogFile,self.nbfloor,DebugMode)
+        self.footprint,  self.BlocHeight, self.BlocNbFloor, self.BlocAlt, self.BlocMaxAlt = self.getfootprint(DB,LogFile,self.nbfloor,DebugMode)
         self.AggregFootprint = self.getAggregatedFootprint()
         self.RefCoord = self.getRefCoord()
         self.DB_Surf = self.getsurface(DB, DBL,LogFile,DebugMode)
         self.SharedBld, self.VolumeCorRatio = self.IsSameFormularIdBuilding(Buildingsfile, nbcase, LogFile, DBL,DebugMode)
         self.BlocHeight, self.BlocNbFloor, self.StoreyHeigth = self.EvenFloorCorrection(self.BlocHeight, self.nbfloor, self.BlocNbFloor, self.footprint, LogFile,DebugMode)
+        self.AdjustBlocDimension()
+        #self.BlocAlt = [0] * len(self.BlocAlt)
         self.EPHeatedArea = self.getEPHeatedArea(LogFile,DebugMode)
         self.AdjacentWalls = [] #this will be appended in the getshade function if any present
         self.shades = self.getshade(nbcase, DataBaseInput,LogFile, PlotOnly=PlotOnly,DebugMode=DebugMode)
         self.Materials = config['3_SIM']['BaseMaterial']
         self.InternalMass = config['3_SIM']['InternalMass']
         self.MakeRelativeCoord(roundfactor = 4)# we need to convert into local coordinate in order to compute adjacencies with more precision than keeping thousand of km for x and y
-
-        #self.edgesHeights = self.getEdgesHeights(roundfactor= 4)
         if not PlotOnly:
             #the attributres above are needed in all case, the one below are needed only if energy simulation is asked for
             self.VentSyst = self.getVentSyst(DB, config['3_SIM']['VentSyst'], LogFile,DebugMode)
@@ -417,7 +435,7 @@ class Building:
                 BlocHeight.append(self.height)
                 BlocAlt.append(0)
                 BlocMaxAlt.append(self.height)
-        #if a polygonew has been seen alone, it means that it should be exruded down to the floor
+        #if a polygon has been seen alone, it means that it should be exruded down to the floor
         if self.Multipolygon:
             for idx,val in enumerate(MatchedPoly):
                 if val ==0:
@@ -428,9 +446,58 @@ class Building:
                     node2remove.append(node)
                     height = DB.geometry.poly3rdcoord[idx] if DB.geometry.poly3rdcoord[idx]>0 else self.height
                     BlocHeight.append(height)
-                    BlocAlt.append(0)
-                    BlocMaxAlt.append(self.height)
+                    BlocAlt.append(max(min(DB.geometry.poly3rdcoord),0))
+                    BlocMaxAlt.append(height)
         # we need to clean the footprint from the node2remove but not if there are part of another bloc
+        idx2remove = []
+        for idx,poly in enumerate(coord):
+            if GeomUtilities.getArea(poly)<1:
+                idx2remove.append(idx)
+        if idx2remove:
+            coord = [poly for idx, poly in enumerate(coord) if idx not in idx2remove]
+            BlocAlt = [val for idx, val in enumerate(BlocAlt) if idx not in idx2remove]
+            BlocMaxAlt = [val for idx, val in enumerate(BlocMaxAlt) if idx not in idx2remove]
+            BlocHeight = [val for idx, val in enumerate(BlocHeight) if idx not in idx2remove]
+            node2remove = [nodes for idx, nodes in enumerate(node2remove) if idx not in idx2remove]
+            msg = '[Geom Cor] '+str(len(idx2remove))+' polygons were removed because of area below 1m2 \n'
+            if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+
+        msg = []
+        for i, j in itertools.combinations(enumerate(BlocAlt), 2):
+            if abs(i[1] - j[1]) < self.AltTolerance:
+                BlocAlt[i[0]] = BlocAlt[j[0]]
+                msg = ('[Geom Info] Some polygon''s altitude were adjusted because of differences lower then '+str(self.AltTolerance)+' m were found with others. \n')
+        for i, j in itertools.combinations(enumerate(BlocMaxAlt), 2):
+            if abs(i[1] - j[1]) < self.AltTolerance:
+                BlocMaxAlt[i[0]] = BlocMaxAlt[j[0]]
+                msg = ('[Geom Info] Some polygon''s altitude were adjusted because of differences lower then '+str(self.AltTolerance)+' m were found with others. \n')
+        if msg and DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+        # BaseAltitue = min(BlocAlt)
+        # AltCor = [(3-(val-BaseAltitue))%3 for val in BlocAlt]
+        # UpperBloc = False
+        # if [val for val in AltCor if val > 0]:
+        #     BlocAlt = [val+AltCor[idx] for idx,val in enumerate(BlocAlt)]
+        #     UpperBloc = True
+        #     msg = ('[Geom Warning] This building have  ' + str(
+        #     self.AltTolerance) + ' m were found with others. \n')
+        BlocAlt = [round(val,self.roundVal) for val in BlocAlt]
+        BlocMaxAlt = [round(val,self.roundVal) for val in BlocMaxAlt]
+        BlocAltMatches = getBlocMatches(BlocAlt, BlocMaxAlt,self.AltTolerance) #Warning, reported indexes are +1 to avoid having 0 inside. Altitude are matches if below 2m
+
+        if [match[1] for match in BlocAltMatches if match[1]]: UpperBloc = True
+        if UpperBloc:
+            msg = ('[Geom Info] Some polygon''s floor altitude can have been changed to matches with ones positionned below (blocs being above one another). \n')
+            if msg and DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+        BlocAlt = [BlocMaxAlt[matches[1]-1] if matches[1] else BlocAlt[matches[0]-1] for matches in BlocAltMatches]
+        idx2remove = [idx for idx,val in enumerate(BlocAlt) if BlocMaxAlt[idx]-val<self.AltTolerance]
+        if idx2remove:
+            coord = [poly for idx,poly in enumerate(coord) if idx not in idx2remove]
+            BlocAlt = [val for idx, val in enumerate(BlocAlt) if idx not in idx2remove]
+            BlocMaxAlt = [val for idx, val in enumerate(BlocMaxAlt) if idx not in idx2remove]
+            BlocHeight = [val for idx, val in enumerate(BlocHeight) if idx not in idx2remove]
+            node2remove = [val for idx, val in enumerate(node2remove) if idx not in idx2remove]
+            msg = ('[Geom Info] At least one polygon has been removed because of an altitude equal to the lowest one along all polygons. \n')
+            if msg and DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         newbloccoor = []
         node2ignoredforPolyMatch = []
         for idx, coor in enumerate(coord):
@@ -446,8 +513,8 @@ class Building:
                                                                       i in node2remove[idx1]]:
                             single = False
                 if single:
-                    FilteredNode2remove.append(node)
-                else: node2ignore.append(node)
+                    FilteredNode2remove.append(coor[node])
+                else: node2ignore.append(coor[node])
             for nodeIdx, node in enumerate(coor):
                 if not nodeIdx in FilteredNode2remove:
                     newcoor.append(node)
@@ -470,12 +537,12 @@ class Building:
             for idx,poly in enumerate(coord):
                 import copy
                 polycor = copy.deepcopy(poly)
-                for i in node2ignoredforPolyMatch[idx]:
-                    polycor.remove(poly[i])
+                for vertex in node2ignoredforPolyMatch[idx]:
+                    polycor.remove(vertex)
                 for idx1,poly1 in enumerate(coord[idx+1:]):
                     polycor1 = copy.deepcopy(poly1)
-                    for i in node2ignoredforPolyMatch[idx+1+idx1]:
-                        polycor1.remove(poly1[i])
+                    for vertex in node2ignoredforPolyMatch[idx+1+idx1]:
+                        polycor1.remove(vertex)
                     if GeomUtilities.chekIdenticalpoly(polycor, polycor1,self.roundVal):
                         IdenticalPoly.append([idx,idx+1+idx1])
             OffsetFrompop =0
@@ -488,7 +555,7 @@ class Building:
                 coord.pop(idxorder[1])
                 BlocHeight[idxorder[0]] = abs(BlocHeight[idx[0]]-BlocHeight[idx[1]])
                 BlocHeight.pop(idxorder[1])
-                BlocAlt[idxorder[0]] = min(BlocAlt[idx[0]],BlocAlt[idx[1]])
+                BlocAlt[idxorder[0]] = min(BlocMaxAlt[idx[0]],BlocMaxAlt[idx[1]])
                 BlocAlt.pop(idxorder[1])
                 BlocMaxAlt[idxorder[0]] = max(BlocMaxAlt[idx[0]],BlocMaxAlt[idx[1]])
                 BlocMaxAlt.pop(idxorder[1])
@@ -509,12 +576,19 @@ class Building:
                     msg = '[Geom Error] The building has three polygons inside one another...please check your input file \n'
                     if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
                     return
+                if (c[0] == c1[0] or c[1] == c1[1]) and i!=j:
+                    msg = '[Geom Warning] Some polygons are asked to be merged with 2 or more others...this can lead to Poly Error because merging with the first one might be not compatible with further mergings...please check initial file \n'
+                    if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         try:
             for i, idx in enumerate(poly2merge):
                 #lets check if it's a tower of smaller footprint than the base:
                 SmallerTower = False
                 if BlocHeight[idx[1]]-BlocHeight[idx[0]]>0:
-                    SmallerTower = True
+                    if BlocAlt[idx[1]] - BlocAlt[idx[0]] > 0:
+                        UpperBloc = True
+                        continue
+                    else: SmallerTower = True
+                    #continue
                 newtry = False
                 if newtry :
                     newSurface = GeomUtilities.mergeHole(coord[idx[0]],coord[idx[1]])
@@ -551,13 +625,17 @@ class Building:
             for i in coord:
                 xs, ys = zip(*i)
                 plt.plot(xs, ys, '-.')
+            return
             #plt.show()
             # titre = 'FormularId : '+str(DB.properties['FormularId'])+'\n 50A_UUID : '+str(DB.properties['50A_UUID'])
             # plt.title(titre)
             # plt.savefig(self.name+ '.png')
             # plt.close(fig)
     #before submitting the full coordinates, we need to check correspondance in case of multibloc
-        coord, validFootprint = GeomUtilities.CheckMultiBlocFootprint(coord,tol = self.DistTol)
+        coord, validFootprint = GeomUtilities.CheckMultiBlocFootprint(coord,BlocAlt,tol = self.DistTol)
+        if UpperBloc:
+            validFootprint = True
+        #validFootprint = True
         if not validFootprint:
             msg = '[Poly Error] The different bloc cannot be extruded further, please check the input file using MakePolygonPlots = True...\n'
             #print(msg[:-1])
@@ -577,7 +655,20 @@ class Building:
         for poly in coord:
             if GeomUtilities.is_clockwise(poly):
                 poly.reverse()
-        return coord, BlocHeight, BlocNbFloor, BlocAlt
+
+        # BlocAlt = [int(val) for val in BlocAlt]
+        # BlocMaxAlt = [int(val) for val in BlocMaxAlt]
+        self.BlocAltMatches = getBlocMatches(BlocAlt, BlocMaxAlt,self.AltTolerance)
+        BlocHeight = [val-val1 for val,val1 in zip(BlocMaxAlt,BlocAlt)]
+        return coord, BlocHeight, BlocNbFloor, BlocAlt,BlocMaxAlt
+
+    def AdjustBlocDimension(self):
+        HeightCors = [h-(mAlt-Alt) for h,mAlt,Alt in zip(self.BlocHeight,self.BlocMaxAlt,self.BlocAlt)]
+        newAlt = []
+        for i,blocMatch in enumerate(self.BlocAltMatches):
+            cor = self.BlocAlt[blocMatch[1]-1]+self.BlocHeight[blocMatch[1]-1] if blocMatch[1] else self.BlocAlt[i]#  self.BlocAlt[i]+HeightCors[blocMatch[1]-1] if blocMatch[1] else self.BlocAlt[i]
+            newAlt.append(cor)
+        self.BlocAlt = newAlt
 
     def EvenFloorCorrection(self,BlocHeight,nbfloor,BlocNbFloor,coord,LogFile,DebugMode=False):
         # we compute a storey height as well to choosen the one that correspond to the highest part of the building afterward
@@ -613,8 +704,7 @@ class Building:
                 try:
                     LogFile.write(
                         '[WARNING] /!\ This bloc as a height below 3m, it has been raized to 3m to enable construction /!\ \n')
-                except:
-                    pass
+                except: pass
         return BlocHeight, BlocNbFloor, StoreyHeigth
 
     def getEPHeatedArea(self,LogFile,DebugMode):

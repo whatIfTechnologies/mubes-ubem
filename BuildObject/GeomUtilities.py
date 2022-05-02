@@ -6,6 +6,8 @@ from shapely.geometry.polygon import Polygon, Point, LineString
 from geomeppy.geom.polygons import Polygon3D, Polygon2D
 from geomeppy.utilities import almostequal
 from geomeppy.geom import core_perim
+import numpy as np
+import copy
 
 def is_clockwise(points):
     # points is your list (or array) of 2d points.
@@ -55,6 +57,13 @@ def ExtraCheck(poly1,poly2):
             Identical = True
     return Identical
 
+def getArea(poly):
+    area = 0
+    for i in range(len(poly)):
+        area = Polygon(poly).area
+        if area>0: break
+        else: poly = poly[1:]+[poly[0]]
+    return area
 
 
 def mergeHole(poly,hole):
@@ -196,12 +205,14 @@ def getSection(poly,mainNode):
                 break
     return section
 
-def CheckMultiBlocFootprint(blocs,tol =1):
+def CheckMultiBlocFootprint(blocs,blocAlt,tol =1):
     validMultibloc = True
     if len(blocs)>1:
         validMultibloc = False
-        for bloc1,bloc2 in itertools.product(blocs,repeat = 2):
-            if bloc1 != bloc2:
+        for idxbloc1,idxbloc2 in itertools.product(enumerate(blocs),repeat = 2):
+            if idxbloc1[1] != idxbloc2[1] and blocAlt[idxbloc1[0]]==blocAlt[idxbloc2[0]]:
+                bloc1 = idxbloc1[1]
+                bloc2 = idxbloc2[1]
                 for ptidx,pt in enumerate(bloc1):
                     edge = [bloc1[ptidx],bloc1[(ptidx+1)%len(bloc1)]]
                     comEdges = []
@@ -224,8 +235,13 @@ def CheckMultiBlocFootprint(blocs,tol =1):
                                     comEdges.append([edge[1],edge[0]])
                                 else:
                                     comEdges.append(edge)
-                    bloc1[ptidx] = edge[0]
-                    bloc1[(ptidx + 1) % len(bloc1)] = edge[1]
+                    #lets make a try to see if the correction doesn't lead to a false polygon
+                    PolyTest = copy.deepcopy(bloc1)
+                    PolyTest[ptidx] = edge[0]
+                    PolyTest[(ptidx + 1) % len(bloc1)] = edge[1]
+                    if Polygon(PolyTest).is_valid:
+                        bloc1[ptidx] = edge[0]
+                        bloc1[(ptidx + 1) % len(bloc1)] = edge[1]
                     #lets check if these nodes are also on bloc2
                     #first which bloc is concerned
                     for comEdge in comEdges:
@@ -240,7 +256,6 @@ def CheckMultiBlocFootprint(blocs,tol =1):
     return blocs,validMultibloc
 
 def point_on_line(a, b, p):
-    import numpy as np
     a = np.array(a)
     b = np.array(b)
     p = np.array(p)
@@ -254,7 +269,6 @@ def getAngle(line1,line2):
     vector_a_y = line1[1][1] - line1[0][1]
     vector_b_x = line2[1][0] - line2[0][0]
     vector_b_y = line2[1][1] - line2[0][1]
-    import numpy as np
     v = np.array([vector_a_x, vector_a_y])
     w = np.array([vector_b_x, vector_b_y])
     return abs(np.rad2deg(np.arccos(round(v.dot(w) / (np.linalg.norm(v) * np.linalg.norm(w)), 4))))

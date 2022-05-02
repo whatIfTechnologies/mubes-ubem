@@ -81,20 +81,25 @@ def makeMultiPolyplots(BldObj):
     h = np.unique([round(val,5) for val in BldObj.geometry.poly3rdcoord])
     for i in range(len(h)):
         plt.figure(i+2)
+    plt.figure(i+3)
     for i, poly in enumerate(coords):
         fignum = np.where(h == round(BldObj.geometry.poly3rdcoord[i],5))[0]+2
-        fig = plt.figure(fignum)
-        ax = fig.add_subplot(111)
-        if len(poly) > 1:
-            poly2plot = poly
-        else:
-            poly2plot = poly[0]
-        x, y = zip(*poly2plot)
-        # z = [BldObj.geometry.poly3rdcoord[i]] * len(x)
-        plt.plot(x, y,'.-')#, z, '.-')
-        plt.title('Horizontal polygon found at altitude : '+str(round(BldObj.geometry.poly3rdcoord[i],5)))
-        ax.set_aspect('equal', adjustable='box')
-        #setPolygonPlotAxis(ax)
+        makeplot(fignum,poly,title = 'Horizontal polygon found at altitude : '+str(round(BldObj.geometry.poly3rdcoord[i],5)))
+        makeplot(len(h)+2,poly,title = 'All horizontal polygons from global upperview')
+
+def makeplot(fignum,poly,title = ''):
+    fig = plt.figure(fignum)
+    ax = fig.add_subplot(111)
+    if len(poly) > 1:
+        poly2plot = poly
+    else:
+        poly2plot = poly[0]
+    x, y = zip(*poly2plot)
+    # z = [BldObj.geometry.poly3rdcoord[i]] * len(x)
+    plt.plot(x, y,'.-')#, z, '.-')
+    plt.title(title)
+    ax.set_aspect('equal', adjustable='box')
+    #setPolygonPlotAxis(ax)
 
 
 def setPolygonPlotAxis(ax):

@@ -57,7 +57,7 @@ def CreatePolygonEnviro(GlobKey,config,WithBackSide = True):
         PolygonEnviro[nbfile]['PathName'] = keyPath['Buildingsfile']
         Edges2Store = {}
         NewEdges2Store = {}
-        DataBaseInput = GrlFct.ReadGeoJsonFile(keyPath)
+        DataBaseInput = GrlFct.ReadGeoJsonFile(keyPath,config['1_DATA']['EPSG_REF'])
         Size = len(DataBaseInput['Build'])
         print('Studying buildings file : '+os.path.basename(keyPath['Buildingsfile']))
         print('Urban Area under construction with:')
@@ -72,7 +72,7 @@ def CreatePolygonEnviro(GlobKey,config,WithBackSide = True):
                 Edges = getBlocEdgesAndHeights(BldObj, roundfactor=4)
                 for blocnum, bloc in enumerate(BldObj.footprint):
                     PolygonEnviro[nbfile]['FootPrint'].append(bloc)
-                    PolygonEnviro[nbfile]['Bld_Height'].append(BldObj.BlocHeight[blocnum])
+                    PolygonEnviro[nbfile]['Bld_Height'].append(BldObj.BlocHeight[blocnum]+BldObj.BlocAlt[blocnum])
                     PolygonEnviro[nbfile]['Bld_ID'].append(BldID)
                     PolygonEnviro[nbfile]['BldNum'].append(bldNum)
                     PolygonEnviro[nbfile]['BlocNum'].append(blocnum)
@@ -82,7 +82,7 @@ def CreatePolygonEnviro(GlobKey,config,WithBackSide = True):
                 PolygonEnviro[nbfile]['Bld_ID'].append(BldID)
                 PolygonEnviro[nbfile]['BldNum'].append(bldNum)
                 PolygonEnviro[nbfile]['BlocNum'].append(0)
-                PolygonEnviro[nbfile]['Bld_Height'].append(max(BldObj.BlocHeight))
+                PolygonEnviro[nbfile]['Bld_Height'].append(max(BldObj.BlocHeight)+min(BldObj.BlocAlt))
             Edges2Store[bldNum] = Edges
         print('\nUrban area constructed')
         PolygonEnviro[nbfile]['EdgesAndHeights'] = Edges2Store
@@ -95,7 +95,7 @@ def getBlocEdgesAndHeights(BldObj,roundfactor = 8):
         localBloc = Polygon2D(poly)
         for edge in localBloc.edges:
             EdgesAndHeights['Edge'].append([(round(x,roundfactor),round(y,roundfactor)) for x,y in edge.vertices])
-            EdgesAndHeights['Height'].append(BldObj.BlocHeight[idx])
+            EdgesAndHeights['Height'].append(BldObj.BlocHeight[idx]+ BldObj.BlocAlt[idx])
             EdgesAndHeights['BlocNum'].append(idx)
     EdgesAndHeights['BldID']= BldObj.BuildID
     return EdgesAndHeights
@@ -116,7 +116,7 @@ def getBldEdgesAndHeights(BldObj,roundfactor = 8):
             Heightidx2 = [idx for idx, val in enumerate(GlobalFootprint.edges_reversed) if edge == val]
             if Heightidx1 or Heightidx2:
                 Heigthidx = Heightidx1 if Heightidx1 else Heightidx2
-                EdgesHeights['Height'][Heigthidx[0]] = BldObj.BlocHeight[idx]
+                EdgesHeights['Height'][Heigthidx[0]] = BldObj.BlocHeight[idx] + BldObj.BlocAlt[idx]
     EdgesHeights['BldID'] = BldObj.BuildID
     return EdgesHeights
 

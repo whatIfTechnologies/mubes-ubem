@@ -193,6 +193,7 @@
         MaxShadingDist : [float,int]                    #[Float] Maximum distance allowed to consider shadowing walls
         DistanceTolerance : [float,int]                 #[Float] Geometric threshold from which below every edge are removed and vertexes merged
         VertexPrecision : [int]                   #[int] precision of the round function for vertex coordinates
+        AltitudeTolerance : [float,int]                    #[float] Threshold below wich altitude will be merged
 
     
     # definition of person/m2...complytely abritrary, but we still need some vaalues

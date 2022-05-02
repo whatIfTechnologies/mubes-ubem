@@ -194,6 +194,7 @@
         VertexKey : 'geometries'                #[str] key for the attribute of the coordinates given in the geojson file only
         MaxShadingDist : 200                    #[Float] Maximum distance allowed to consider shadowing walls
         DistanceTolerance : 0.2                 #[Float] Geometric threshold from which below every edge are removed and vertexes merged
+        AltitudeTolerance : 3                   #[float] Threshold below wich altitude will be merged. it should be the heigh of a storey
         VertexPrecision : 5                     #[int] precision of the round function for vertex coordinates
 
 
