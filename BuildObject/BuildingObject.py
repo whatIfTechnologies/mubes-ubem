@@ -474,7 +474,7 @@ class Building:
         if msg and DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         # BaseAltitue = min(BlocAlt)
         # AltCor = [(3-(val-BaseAltitue))%3 for val in BlocAlt]
-        # UpperBloc = False
+        UpperBloc = False
         # if [val for val in AltCor if val > 0]:
         #     BlocAlt = [val+AltCor[idx] for idx,val in enumerate(BlocAlt)]
         #     UpperBloc = True
