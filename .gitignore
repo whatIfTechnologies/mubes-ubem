@@ -1,0 +1,6 @@
+# mac files
+.DS_Store
+
+# vscode local settings
+.vscode
+*.code-workspace
