@@ -829,9 +829,11 @@ class Building:
 
     def getshade(self, nbcase, DataBaseInput,LogFile, PlotOnly=True, DebugMode=False):
         "Get all the shading surfaces to be build for surrounding building effect"
+        shades = {}
+        if PlotOnly ==1: #if its 1 it means that a general plot with all buildings is asked, so ne need to even consider the shadings
+            return shades
         JSONFile = []
         GeJsonFile = []
-        shades = {}
         BuildingFileName = os.path.basename(self.BuildingFilePath)
         JSonTest = os.path.join(os.path.dirname(self.BuildingFilePath),BuildingFileName[:BuildingFileName.index('.')] + '_Walls.json')
         GeoJsonTest = os.path.join(os.path.dirname(self.BuildingFilePath),BuildingFileName.replace('Buildings', 'Walls'))
