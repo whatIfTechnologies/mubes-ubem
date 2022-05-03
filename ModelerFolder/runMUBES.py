@@ -190,6 +190,8 @@ if __name__ == '__main__' :
                                                                    CaseChoices['MakePlotsPerBld'], nbcase=[],
                                                                    LastBld=lastBld)
             offset += file_idx
+            os.chdir(CurrentPath)
+            GrlFct.CleanUpLogFiles(file['SimDir'])
     elif not SepThreads and not CaseChoices['CreateFMU'] and File2Launch[0]:
         CurrentSimDir = ''
         for ListKey in File2Launch:

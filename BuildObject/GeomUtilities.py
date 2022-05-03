@@ -291,6 +291,19 @@ def CoordAdjustement(edge,pt,tol):
         pt = edge[1]
     return pt,coormade
 
+def checkAltTolerance(BlocAlt,AltTolerance):
+    msg = []
+    for i, val in enumerate(BlocAlt):
+        sameAltIdx = [i]
+        for j, val1 in enumerate(BlocAlt[i + 1:]):
+            if abs(val - val1) < AltTolerance:
+                sameAltIdx.append(j + i + 1)
+                msg = ('[Geom Info] Some polygon''s altitude were adjusted because of differences lower then '+str(AltTolerance)+' m were found with others. \n')
+        AverageAlt = sum([BlocAlt[k] for k in sameAltIdx]) / len(sameAltIdx)
+        BlocAlt = [AverageAlt if idx in sameAltIdx else alt for idx, alt in enumerate(BlocAlt)]
+        if len(sameAltIdx)==len(BlocAlt): break
+    return BlocAlt,msg
+
 def confirmMatch(Edge, Edge1,tol):
     #this should be enough if both edges are already checked being //
     dist1 = min(LineString(Edge).distance(Point(Edge1[0])),LineString(Edge).distance(Point(Edge1[1])))

@@ -70,7 +70,7 @@ def readPathfile(Pathways):
                     keyPath[key] = os.path.normcase(line[line.find(':') + 1:-1])
     return keyPath
 
-def ReadGeoJsonFile(keyPath,CoordSys,toBuildPool = False):
+def ReadGeoJsonFile(keyPath,CoordSys = '',toBuildPool = False):
     #print('Reading Input files,...')
     try:
         BuildObjectDict = ReadGeojsonKeyNames(keyPath['GeojsonProperties'])

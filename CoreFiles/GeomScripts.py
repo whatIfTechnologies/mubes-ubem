@@ -105,8 +105,6 @@ def createRapidGeomElem(idf,building):
 def createAdjacentWalls(building,idf):
     for ii,sh in enumerate(building.shades):
         if building.shades[sh]['distance'] == 0 and (building.shades[sh]['height']-min(building.BlocAlt))>0:
-            print('coucou')
-            print(building.name)
             idf.add_shading_block(
                 name='Shading_'+sh,
                 coordinates=building.shades[sh]['Vertex'], #[GeomElement['VertexKey']],

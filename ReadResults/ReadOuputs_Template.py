@@ -43,10 +43,10 @@ def plotAreaVal(GlobRes,FigName,name):
                                          'Areas (m2)', 'x')
         vary = [Res['EP_Area'][idx] for idx in index_y]
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][0],varx, [vary], 'Building', [name[nb]],
-                                 'Areas (m2)', signe[nb])
+                                 'Areas (m2)', signe[np.random.randint(0, 10)])
         #vary = [(varyref[idx]-vary[idx])/varyref[idx] for idx in range(len(vary))]
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][1],varyref, [vary], 'ATemp (m2)', [name[nb]],
-                                 'EP Area (m2)', signe[nb])
+                                 'EP Area (m2)', signe[np.random.randint(0, 10)])
     # Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][1],[0,max(varyref)], [[0,max(varyref)]], 'ATemp (m2)', ['1:1'],
     #                             'EP Area (m2)', '--')
 
@@ -121,11 +121,11 @@ def plotDim(GlobRes,FigName,name):
             varx4Height = varx
             Vol = [height[idx] * floorarea[idx] for idx in range(len(floorarea))]
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][0], varx, [floorarea], 'Building', [name[nb]],
-                                 'Footprint Area (m2)', signe[nb])
+                                 'Footprint Area (m2)', signe[np.random.randint(0, 10)])
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][1], varx4Height, [height], 'Building', [name[nb]],
-                                 'Height (m)', signe[nb])
+                                 'Height (m)', signe[np.random.randint(0, 10)])
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][2], varx, [Vol], 'Building', [name[nb]],
-                                 'Volume (m3)', signe[nb])
+                                 'Volume (m3)', signe[np.random.randint(0, 10)])
 
 def plotShadingEffect(GlobRes,FigName,name):
     refVar = '[''BuildID''][key]'
@@ -139,7 +139,10 @@ def plotShadingEffect(GlobRes,FigName,name):
         varx = Res['MaxShadingDist']
         vary = Res['EP_Heat']
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][0], varx, [vary], 'Max Shading Distance (m)', [name[nb]],
-                                 'Heat Needs (kWh/m2)', signe[nb])
+                                 'Heat Needs (kWh/m2)', signe[np.random.randint(0, 10)])
+        Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][1], varx, [[val/max(vary) for val in vary]], 'Max Shading Distance (m)',
+                                 [name[nb]],
+                                 'Heat Needs (kWh/m2)', signe[np.random.randint(0, 10)])
 
 
 
@@ -162,10 +165,10 @@ def plotEnergy(GlobRes,FigName,name):
                                      'Heat Needs (kWh/m2)', 'x')
         vary = [Res['EP_Heat'][idx] for idx in index_y]
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][0], varx, [vary], 'Building', [name[nb]],
-                                 'Heat Needs (kWh/m2)', signe[nb])
+                                 'Heat Needs (kWh/m2)', signe[np.random.randint(0, 10)])
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][1], varyref, [vary], 'EP Sim',
                                  [name[nb]],
-                                 'EP Sim', signe[nb])
+                                 'EP Sim', signe[np.random.randint(0, 10)])
     # Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax'][1], [0, max(varyref)], [[0, max(varyref)]],
     #                          'EPCs', ['1:1'],
     #                          'Heat Needs (kWh/m2)', 'k-')
@@ -212,7 +215,7 @@ def plotIndex(GlobRes,FigName,name):
         vary = [Res['SimNum'][idx] for idx in index_y]
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax0'], varx, [vary], 'Building',
                                  [name[nb]],
-                                 'Building num in the GeojSon file', signe[nb])
+                                 'Building num in the GeojSon file', signe[np.random.randint(0, 10)])
 
 def Read_Arguments():
     #these are defaults values:
@@ -288,8 +291,8 @@ if __name__ == '__main__' :
     #because we can have several path for several studies we want to overplot.
 
     #Path can be written in hard for specific test
-    # path = ['C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\ecmnewcalibyearly\\build_5\\Sim_Results']
-    # path.append('C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\ecmnewcalibyearly\\build_25\\Sim_Results')
+    # path = ['C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\MinnebergAlt\\Build_0\\Sim_Results']
+    # path.append('C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\MinnebergAlt\\Build_1\\Sim_Results')
     # path.append('C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\ecmnewcalibyearly\\build_39\\Sim_Results')
     # CaseNames = ['5','25','39']
 
@@ -299,15 +302,17 @@ if __name__ == '__main__' :
     id =0
     for idx, curPath in enumerate(path):
         print('Considering results from : '+Names4Plots[idx])
-        Res[idx] = Utilities.GetData(curPath,extraVar)
-        #lets grab the time series name (the chossen ouputs from EP).
-        # /!\ the data are taken from the building number 0, thus if for example not an office type, the will be no occupant. Choose another building if needed
-        blfRef=0
-        if idx==0:
-            for key in Res[idx]['HeatedArea'][blfRef].keys():
-                if type(Res[idx]['HeatedArea'][blfRef][key])==list:
-                    TimeSerieList.append(key)
-                    TimeSerieUnit.append(Res[idx]['HeatedArea'][blfRef][key.replace('Data_','Unit_')])
+        try:
+            Res[idx] = Utilities.GetData(curPath,extraVar)
+            #lets grab the time series name (the chossen ouputs from EP).
+            # /!\ the data are taken from the building number 0, thus if for example not an office type, the will be no occupant. Choose another building if needed
+            blfRef=0
+            if idx==0:
+                for key in Res[idx]['HeatedArea'][blfRef].keys():
+                    if type(Res[idx]['HeatedArea'][blfRef][key])==list:
+                        TimeSerieList.append(key)
+                        TimeSerieUnit.append(Res[idx]['HeatedArea'][blfRef][key.replace('Data_','Unit_')])
+        except: pass
 
 
     #The opening order does not follows the building simulation number while opening the data. Thus, this first graphs provides the correspondance between the other plots, building number and their simulation number
@@ -317,17 +322,17 @@ if __name__ == '__main__' :
     ErrorFig = Utilities.createMultilFig('',2,linked=False)
     plotErrorFile(Res, ErrorFig, Names4Plots)
     #this 3rd graph gives the footprint area and the correspondance between EPCs value if available
-    AreaFig = Utilities.createMultilFig('',2,linked=False)
-    plotAreaVal(Res, AreaFig, Names4Plots)
-    #this one gives geometric values
-    DimFig = Utilities.createMultilFig('', 3)
-    plotDim(Res, DimFig,Names4Plots)
-    # this one gives the energy demand of heating with EPCs values
-    EnergyFig = Utilities.createMultilFig('',2,linked=False)
-    plotEnergy(Res, EnergyFig,Names4Plots)
+    # AreaFig = Utilities.createMultilFig('',2,linked=False)
+    # plotAreaVal(Res, AreaFig, Names4Plots)
+    # #this one gives geometric values
+    # DimFig = Utilities.createMultilFig('', 3)
+    # plotDim(Res, DimFig,Names4Plots)
+    # # this one gives the energy demand of heating with EPCs values
+    # EnergyFig = Utilities.createMultilFig('',2,linked=False)
+    # plotEnergy(Res, EnergyFig,Names4Plots)
     #this one is the consumption depending on the shading distance (of course simulation should have been done before...)
-    # ShadingFig = Utilities.createMultilFig('',2,linked=False)
-    # plotShadingEffect(Res, ShadingFig,Names4Plots)
+    ShadingFig = Utilities.createMultilFig('',2,linked=False)
+    plotShadingEffect(Res, ShadingFig,Names4Plots)
 
     #below, some timeseries are plotted, all time series available but only for building Simulation Number 0
     Figures={}

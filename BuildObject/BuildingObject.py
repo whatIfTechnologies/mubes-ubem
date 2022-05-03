@@ -160,7 +160,6 @@ class Building:
         self.SharedBld, self.VolumeCorRatio = self.IsSameFormularIdBuilding(Buildingsfile, nbcase, LogFile, DBL,DebugMode)
         self.BlocHeight, self.BlocNbFloor, self.StoreyHeigth = self.EvenFloorCorrection(self.BlocHeight, self.nbfloor, self.BlocNbFloor, self.footprint, LogFile,DebugMode)
         self.AdjustBlocDimension()
-        #self.BlocAlt = [0] * len(self.BlocAlt)
         self.EPHeatedArea = self.getEPHeatedArea(LogFile,DebugMode)
         self.AdjacentWalls = [] #this will be appended in the getshade function if any present
         self.shades = self.getshade(nbcase, DataBaseInput,LogFile, PlotOnly=PlotOnly,DebugMode=DebugMode)
@@ -462,24 +461,10 @@ class Building:
             msg = '[Geom Cor] '+str(len(idx2remove))+' polygons were removed because of area below 1m2 \n'
             if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
 
-        msg = []
-        for i, j in itertools.combinations(enumerate(BlocAlt), 2):
-            if abs(i[1] - j[1]) < self.AltTolerance:
-                BlocAlt[i[0]] = BlocAlt[j[0]]
-                msg = ('[Geom Info] Some polygon''s altitude were adjusted because of differences lower then '+str(self.AltTolerance)+' m were found with others. \n')
-        for i, j in itertools.combinations(enumerate(BlocMaxAlt), 2):
-            if abs(i[1] - j[1]) < self.AltTolerance:
-                BlocMaxAlt[i[0]] = BlocMaxAlt[j[0]]
-                msg = ('[Geom Info] Some polygon''s altitude were adjusted because of differences lower then '+str(self.AltTolerance)+' m were found with others. \n')
+        BlocAlt,msg = GeomUtilities.checkAltTolerance(BlocAlt,self.AltTolerance)
+        BlocMaxAlt, msg = GeomUtilities.checkAltTolerance(BlocMaxAlt, self.AltTolerance)
         if msg and DebugMode: GrlFct.Write2LogFile(msg, LogFile)
-        # BaseAltitue = min(BlocAlt)
-        # AltCor = [(3-(val-BaseAltitue))%3 for val in BlocAlt]
         UpperBloc = False
-        # if [val for val in AltCor if val > 0]:
-        #     BlocAlt = [val+AltCor[idx] for idx,val in enumerate(BlocAlt)]
-        #     UpperBloc = True
-        #     msg = ('[Geom Warning] This building have  ' + str(
-        #     self.AltTolerance) + ' m were found with others. \n')
         BlocAlt = [round(val,self.roundVal) for val in BlocAlt]
         BlocMaxAlt = [round(val,self.roundVal) for val in BlocMaxAlt]
         BlocAltMatches = getBlocMatches(BlocAlt, BlocMaxAlt,self.AltTolerance) #Warning, reported indexes are +1 to avoid having 0 inside. Altitude are matches if below 2m
@@ -665,10 +650,12 @@ class Building:
     def AdjustBlocDimension(self):
         HeightCors = [h-(mAlt-Alt) for h,mAlt,Alt in zip(self.BlocHeight,self.BlocMaxAlt,self.BlocAlt)]
         newAlt = []
+        newMaxAlt = []
         for i,blocMatch in enumerate(self.BlocAltMatches):
-            cor = self.BlocAlt[blocMatch[1]-1]+self.BlocHeight[blocMatch[1]-1] if blocMatch[1] else self.BlocAlt[i]#  self.BlocAlt[i]+HeightCors[blocMatch[1]-1] if blocMatch[1] else self.BlocAlt[i]
-            newAlt.append(cor)
+            newAlt.append(round(self.BlocAlt[blocMatch[1]-1]+self.BlocHeight[blocMatch[1]-1] if blocMatch[1] else self.BlocAlt[i],self.roundVal))
+            newMaxAlt.append(round(self.BlocMaxAlt[i] + HeightCors[i],self.roundVal))
         self.BlocAlt = newAlt
+        self.BlocMaxAlt = newMaxAlt
 
     def EvenFloorCorrection(self,BlocHeight,nbfloor,BlocNbFloor,coord,LogFile,DebugMode=False):
         # we compute a storey height as well to choosen the one that correspond to the highest part of the building afterward
@@ -865,6 +852,10 @@ class Building:
         if GeJsonFile:
             msg = '[Shadowing Info] Shadowing walls are taken from a GeoJson file\n'
             if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+            self.BlocAlt = [0] * len(self.BlocAlt)
+            self.BlocMaxAlt = [val for val in self.BlocHeight]
+            msg = '[Geom Info] Altitudes are fixed to 0 (ground level) as shadowing wall heights were computed without altitude\n'
+            if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
             Shadingsfile = DataBaseInput['Shades']
             Buildingsfile = DataBaseInput['Build']
             try:
@@ -981,6 +972,7 @@ class Building:
                     OccupType[key[:-4]] = 0
             if '_Rate' in key:
                 self.OccupRate[key[:-5]] = OccupTypeDict[key]
+        if sum([OccupType[i] for i in OccupType.keys()]): OccupType['Residential'] = 1
         msg = '[Usage Info] This building has ' + str(1 - OccupType['Residential']) + ' % of none residential occupancy type\n'
         if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         return OccupType

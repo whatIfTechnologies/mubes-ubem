@@ -189,6 +189,7 @@ def getConfig(App = ''):
         ConfigFromArg, Case2Launch = Read_Arguments(App = App)
     config = read_yaml(os.path.join(os.path.dirname(os.getcwd()),'CoreFiles','DefaultConfig.yml'))
     configUnit = read_yaml(os.path.join(os.path.dirname(os.getcwd()), 'CoreFiles', 'DefaultConfigKeyUnit.yml'))
+    geojsonfile = False
     if Case2Launch:
         localConfig4Path, filefound, msg = check4localConfig(os.getcwd())
         print(os.path.join(os.path.abspath(config['0_APP']['PATH_TO_RESULTS']), Case2Launch, 'ConfigFile.yml'))
@@ -207,6 +208,8 @@ def getConfig(App = ''):
             localConfig = read_yaml(ConfigFromArg)
             config, msg = ChangeConfigOption(config, localConfig)
             if msg: print(msg)
+        elif ConfigFromArg[-8:] == '.geojson':
+            geojsonfile = True
         else:
              print('[Unknown Argument] Please check the available options for arguments : -yml or -CONFIG')
              sys.exit()
@@ -240,6 +243,8 @@ def getConfig(App = ''):
     # a first keypath dict needs to be defined to comply with the current paradigme along the code
     Buildingsfile = os.path.abspath(config['1_DATA']['PATH_TO_DATA'])
     keyPath = {'epluspath': epluspath, 'Buildingsfile': Buildingsfile, 'pythonpath': '', 'GeojsonProperties': ''}
+    if geojsonfile:
+        keyPath['Buildingsfile'] = ConfigFromArg
     # this function makes the list of dictionnary with single input files if several are present inthe sample folder
     GlobKey, MultipleFiles = GrlFct.ListAvailableFiles(keyPath)
     if App == 'Shadowing':
@@ -266,18 +271,18 @@ def Read_Arguments(App = ''):
         if (currArg.startswith('-CONFIG')):
             currIdx += 1
             Config2Launch = json.loads(sys.argv[currIdx])
-            return Config2Launch,Case2Launch
         if (currArg.startswith('-yml')):
             currIdx += 1
             Config2Launch = sys.argv[currIdx]
-            return Config2Launch,Case2Launch
         if (currArg.startswith('-Case')):
             currIdx += 1
             Case2Launch = sys.argv[currIdx]
-            return Config2Launch,Case2Launch
         if (currArg.startswith('-ShadeLimits')):
             currIdx += 1
             ShadeLim = sys.argv[currIdx]
+        if (currArg.startswith('-geojson')):
+            currIdx += 1
+            Config2Launch = sys.argv[currIdx]
         currIdx += 1
     if App == 'Shadowing': return Config2Launch,Case2Launch, ShadeLim
     else: return Config2Launch,Case2Launch
