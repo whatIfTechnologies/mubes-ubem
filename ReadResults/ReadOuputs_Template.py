@@ -322,17 +322,17 @@ if __name__ == '__main__' :
     ErrorFig = Utilities.createMultilFig('',2,linked=False)
     plotErrorFile(Res, ErrorFig, Names4Plots)
     #this 3rd graph gives the footprint area and the correspondance between EPCs value if available
-    # AreaFig = Utilities.createMultilFig('',2,linked=False)
-    # plotAreaVal(Res, AreaFig, Names4Plots)
-    # #this one gives geometric values
-    # DimFig = Utilities.createMultilFig('', 3)
-    # plotDim(Res, DimFig,Names4Plots)
-    # # this one gives the energy demand of heating with EPCs values
-    # EnergyFig = Utilities.createMultilFig('',2,linked=False)
-    # plotEnergy(Res, EnergyFig,Names4Plots)
+    AreaFig = Utilities.createMultilFig('',2,linked=False)
+    plotAreaVal(Res, AreaFig, Names4Plots)
+    #this one gives geometric values
+    DimFig = Utilities.createMultilFig('', 3)
+    plotDim(Res, DimFig,Names4Plots)
+    # this one gives the energy demand of heating with EPCs values
+    EnergyFig = Utilities.createMultilFig('',2,linked=False)
+    plotEnergy(Res, EnergyFig,Names4Plots)
     #this one is the consumption depending on the shading distance (of course simulation should have been done before...)
-    ShadingFig = Utilities.createMultilFig('',2,linked=False)
-    plotShadingEffect(Res, ShadingFig,Names4Plots)
+    # ShadingFig = Utilities.createMultilFig('',2,linked=False)
+    # plotShadingEffect(Res, ShadingFig,Names4Plots)
 
     #below, some timeseries are plotted, all time series available but only for building Simulation Number 0
     Figures={}
