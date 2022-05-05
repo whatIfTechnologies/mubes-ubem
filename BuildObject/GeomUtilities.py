@@ -116,17 +116,74 @@ def CleanPoly(poly,DistTol,roundVal):
         polycoor.append(tuple(new_coor))
     if polycoor[0] == polycoor[-1]:
         polycoor = polycoor[:-1]
-    # even before skewed angle, we need to check for tiny edge below the tolerance onsdered aftward (0.5m)
+    # even before skewed angle, we need to check for tiny edge below the tolerance DisTol
     pt2remove = []
-    for edge in Polygon2D(polycoor).edges:
-        if edge.length < DistTol:
-            pt2remove.append(edge.p2)
-    for pt in pt2remove:
-        if len(polycoor) > 3:
-            polycoor.remove(pt)
+    # polycoor = removeAlignedEdges(polycoor)
+    polycoor = removeEdge(polycoor, DistTol)
+    polycoor = AvoidBalconyEffect(polycoor, DistTol)
+    # for edge in Polygon2D(polycoor).edges:
+    #     if edge.length < DistTol:
+    #         pt2remove.append(edge.p2)
+    # for pt in pt2remove:
+    #     if len(polycoor) > 3:
+    #         polycoor.remove(pt)
     newpolycoor, node = core_perim.CheckFootprintNodes(polycoor, 5) #the returned poly is not used finally investigation are to be done !
     polycoor = [(round(point[0],roundVal),round(point[1],roundVal)) for point in polycoor]
     return polycoor, node #the cleaner newpolycoord cannot be used here as it can be attachedto someother blocs, so the nodes are kept only
+
+def AvoidBalconyEffect(poly,DistTol):
+    finished = False
+    while not finished:
+        node2remove = []
+        for nodei,nodej in itertools.combinations(enumerate(poly), 2):
+            if getDistance(nodei[1],nodej[1])<DistTol and (nodej[0]-nodei[0])<3:
+                node2remove.append(nodei[0])
+                node2remove.append(nodej[0])
+                break
+        if node2remove:
+            poly = [node for idx,node in enumerate(poly) if idx not in node2remove]
+        else:
+            finished = True
+    return poly
+
+def removeAlignedEdges(poly):
+    finished = False
+    while not finished:
+        pt2remove = False
+        for idx, pt in enumerate(poly):
+            pt1 = poly[-1 if idx == 0 else idx - 1]
+            pt2 = poly[(idx + 1) % len(poly)]
+            line1 = (pt, pt1)
+            line2 = (pt, pt2)
+            if getAngle(line1, line2) < 5:
+                pt2remove = True
+                break
+            if pt2remove and len(poly) > 4:
+                poly.pop(idx)
+            else:
+                finished = True
+            return poly
+
+def removeEdge(poly,DistTol):
+    finished = False
+    while not finished:
+        pt2remove = False
+        for idx,pt in enumerate(poly):
+            pt2 = poly[(idx+1)%len(poly)]
+            if getDistance(pt,pt2) < DistTol:
+                midPoint = ((pt[0]+pt2[0])/2,(pt[1]+pt2[1])/2)
+                line1 = (midPoint, poly[-1 if idx == 0 else idx - 1])
+                line2 = (midPoint, poly[(idx + 2) % len(poly)])
+                if getAngle(line1, line2)>80:
+                    pt2remove = True
+                    break
+        if pt2remove and len(poly)>4:
+            poly.pop(idx)
+            poly.insert(idx,midPoint)
+            poly.pop((idx+1)%len(poly))
+        else:
+            finished = True
+    return poly
 
 def mergeGeomeppy(poly,hole):
     poly = Polygon3D(poly)
@@ -271,7 +328,25 @@ def getAngle(line1,line2):
     vector_b_y = line2[1][1] - line2[0][1]
     v = np.array([vector_a_x, vector_a_y])
     w = np.array([vector_b_x, vector_b_y])
+    # ang1 = np.arctan2(*v[::-1])
+    # ang2 = np.arctan2(*w[::-1])
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # Makeplot(line1)
+    # Makeplot(line2)
+    # a = plt.gca()
+    # a.set_aspect('equal', adjustable='box')
+    # print(np.rad2deg((ang1 - ang2) % (2 * np.pi))%180, abs(np.rad2deg(np.arccos(round(v.dot(w) / (np.linalg.norm(v) * np.linalg.norm(w)), 4)))))
     return abs(np.rad2deg(np.arccos(round(v.dot(w) / (np.linalg.norm(v) * np.linalg.norm(w)), 4))))
+
+# def getNewAngle(line1,line2):
+#     if getDistance(line1[0],line2[1]) > max(getDistance(line1[0],line1[1]),getDistance(line2[0],line2[1])):
+def Makeplot(poly):
+    import matplotlib.pyplot as plt
+
+    x, y = zip(*poly)
+    plt.plot(x, y, '.-')
+
 
 def is_parallel(line1, line2, tol = 5):
     angledeg = getAngle(line1, line2)

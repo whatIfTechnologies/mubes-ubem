@@ -387,6 +387,10 @@ class Building:
                         MatchedPoly[idx1] = 1
                         MatchedPoly[idx2+idx1+1] = 1
                         newpolycoor,node = GeomUtilities.CleanPoly(poly1,self.DistTol,self.roundVal)
+                        if len(newpolycoor)<3:
+                            msg = '[Geom Cor] At least one polygon has been ignored because of the distance thresholds \n'
+                            if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+                            continue
                         node2remove.append(node)
                          #polycoor.reverse()
                         #test of identical polygone maybe (encountered from geojon made out of skethup
