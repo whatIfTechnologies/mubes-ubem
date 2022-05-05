@@ -617,6 +617,17 @@ class Building:
             # plt.savefig(self.name+ '.png')
             # plt.close(fig)
     #before submitting the full coordinates, we need to check correspondance in case of multibloc
+        #this check is made after encountering a specific case that never appeared form now...
+        idx2remove = []
+        for idx, poly in enumerate(coord):
+            if GeomUtilities.getArea(poly) < 1:
+                idx2remove.append(idx)
+        if idx2remove:
+            coord = [poly for idx, poly in enumerate(coord) if idx not in idx2remove]
+            BlocAlt = [val for idx, val in enumerate(BlocAlt) if idx not in idx2remove]
+            BlocMaxAlt = [val for idx, val in enumerate(BlocMaxAlt) if idx not in idx2remove]
+            msg = '[Geom Cor] ' + str(len(idx2remove)) + ' polygons were removed because of area below 1m2 \n'
+            if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         coord, validFootprint = GeomUtilities.CheckMultiBlocFootprint(coord,BlocAlt,tol = self.DistTol)
         if UpperBloc:
             validFootprint = True

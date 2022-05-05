@@ -58,7 +58,7 @@ def makePolyPlots(CaseChoices,Pool2Launch):
                 z = [BldObj.geometry.poly3rdcoord[i]]*len(x)
                 plt.plot(x, y,z, '-')
             else:
-                plt.plot(x, y, '.-')
+                plt.plot(x, y, '-')
         if CaseChoices['MakePlotsPerBld'] or len(Pool2Launch)==1:
             try : titlemsg = str(CaseChoices['BldIDKey']) + ' : ' + str(
                         propreties[CaseChoices['BldIDKey']])

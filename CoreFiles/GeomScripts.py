@@ -84,7 +84,7 @@ def createBuilding(LogFile,idf,building,perim,FloorZoning,ForPlots =False,DebugM
     # it should thus be only the roof surfaces. Non convex internal zone are not concerned as Solar distribution is 'FullExterior'
     try:
         if not ForPlots:
-            split2convex(idf)
+            split2convex(idf,DebugMode,LogFile)
     except:
         msg ='[Error - Convex] The Split2convex function failed for this building....\n'
         if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
@@ -242,7 +242,7 @@ def createAirwallsCstr(idf):
     return idf
 
 
-def split2convex(idf):
+def split2convex(idf,DebugMode,LogFile):
     surlist = idf.idfobjects['BUILDINGSURFACE:DETAILED']
     idxi = []
     for i, j in enumerate(surlist):
@@ -288,7 +288,8 @@ def split2convex(idf):
                 nbmove += 1
                 if nbmove > len(coord2split):
                     TrianglesOK = True
-                    print('[Splitting Area Warning] The smallest surfaces remain below the threshold for all possible order combination')
+                    msg = '[Warning - Convex] The splitting surface process to make them all convex failed to find all surfaces above 0.1m2...\n'
+                    if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         stillleft = True
         while stillleft:
             mergeTrigle, stillleft = MergeTri(trigle)
@@ -312,7 +313,9 @@ def split2convex(idf):
                 Wind_Exposure=surf2treat.Wind_Exposure,
             )
             surftri.setcoords(new_coord)
-            if 'Roof' in surf2treat.Name and surftri.tilt == 180:
+            if 'roof' in surf2treat.Name.lower() and surftri.tilt == 180:
+                    surftri.setcoords(reversed(new_coord))
+            if 'floor' in surf2treat.Name.lower() and surftri.tilt == 0:
                     surftri.setcoords(reversed(new_coord))
         idf.removeidfobject(surf2treat)
     return idf
