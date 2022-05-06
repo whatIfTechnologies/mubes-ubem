@@ -8,6 +8,7 @@ from geomeppy.utilities import almostequal
 from geomeppy.geom import core_perim
 import numpy as np
 import copy
+import CoreFiles.GeneralFunctions as GrlFct
 
 def is_clockwise(points):
     # points is your list (or array) of 2d points.
@@ -118,9 +119,18 @@ def CleanPoly(poly,DistTol,roundVal):
         polycoor = polycoor[:-1]
     # even before skewed angle, we need to check for tiny edge below the tolerance DisTol
     pt2remove = []
-    # polycoor = removeAlignedEdges(polycoor)
+    #lets removes aligned edges only checkec from angle
+    polycoor = removeAlignedEdges(polycoor)
+    if len(polycoor)<3: return polycoor, []
+    #lets removes the edges below a distance threshold
     polycoor = removeEdge(polycoor, DistTol)
+    if len(polycoor)<3: return polycoor, []
+    #letscheck for balcony effect (triangle form removing formerly small edges)
     polycoor = AvoidBalconyEffect(polycoor, DistTol)
+    if len(polycoor)<3: return polycoor, []
+    # lets removes aligned edges only checked from angle
+    polycoor = removeAlignedEdges(polycoor)
+    if len(polycoor)<3: return polycoor, []
     # for edge in Polygon2D(polycoor).edges:
     #     if edge.length < DistTol:
     #         pt2remove.append(edge.p2)
@@ -153,16 +163,20 @@ def removeAlignedEdges(poly):
         for idx, pt in enumerate(poly):
             pt1 = poly[-1 if idx == 0 else idx - 1]
             pt2 = poly[(idx + 1) % len(poly)]
-            line1 = (pt, pt1)
-            line2 = (pt, pt2)
-            if getAngle(line1, line2) < 5:
+            if pt == pt1 or pt == pt2: #this if duplicate node is found
                 pt2remove = True
                 break
-            if pt2remove and len(poly) > 4:
-                poly.pop(idx)
-            else:
-                finished = True
-            return poly
+            line1 = (pt, pt1)
+            line2 = (pt, pt2)
+            angle = getAngle(line1,line2)
+            if angle < 5 or abs(angle-180)<5:
+                pt2remove = True
+                break
+        if pt2remove and len(poly) > 4:
+            poly.pop(idx)
+        else:
+            finished = True
+    return poly
 
 def removeEdge(poly,DistTol):
     finished = False
@@ -222,7 +236,7 @@ def mergeGeomeppy(poly,hole):
     new_poly_try = section(first_on_poly, last_on_poly, poly[:] + poly[:]) + section(
         first_on_hole, last_on_hole, (hole[:] + hole[:])
     )
-    if Polygon3D(new_poly).area > Polygon3D(new_poly_try).area:
+    if getArea(new_poly) > getArea(new_poly_try) and getArea(new_poly_try) > 0:
         new_poly = new_poly_try
 
     new_poly = Polygon3D(new_poly)
@@ -236,6 +250,91 @@ def mergeGeomeppy(poly,hole):
         new_poly2 = new_poly2.invert_orientation()
 
     return [new_poly, new_poly2]
+
+def MakeMerge(coord,poly2merge,DebugMode,LogFile,BlocHeight,BlocAlt,BlocMaxAlt):
+    try:
+        for i, idx in enumerate(poly2merge):
+            # lets check if it's a tower of smaller footprint than the base:
+            SmallerTower = False
+            if BlocHeight[idx[1]] - BlocHeight[idx[0]] > 0:
+                # if BlocAlt[idx[1]] - BlocAlt[idx[0]] > 0:
+                #     UpperBloc = True
+                #     continue
+                # else:
+                    SmallerTower = True
+                # continue
+            newtry = False
+            if newtry:
+                newSurface = mergeHole(coord[idx[0]], coord[idx[1]])
+                coord[idx[0]] = newSurface[0]
+                coord[idx[1]] = newSurface[1]
+            else:
+                new_surfaces = mergeGeomeppy(coord[idx[0]], coord[idx[1]])
+                # new_surfaces = break_polygons(Polygon3D(coord[idx[0]]), Polygon3D(coord[idx[1]]))
+                xs, ys, zs = zip(*list(new_surfaces[0]))
+                coord[idx[0]] = [(xs[nbv], ys[nbv]) for nbv in range(len(xs))]
+                if len(new_surfaces) > 1:
+                    xs, ys, zs = zip(*list(new_surfaces[1]))
+                    if SmallerTower:
+                        coord.append([(xs[nbv], ys[nbv]) for nbv in range(len(xs))])
+                        BlocHeight.append(BlocHeight[idx[0]])
+                        BlocAlt.append(BlocAlt[idx[0]])
+                        BlocMaxAlt.append(BlocMaxAlt[idx[0]])
+                    else:
+                        coord[idx[1]] = [(xs[nbv], ys[nbv]) for nbv in range(len(xs))]
+                        BlocHeight[idx[1]] = BlocHeight[idx[0]]
+                else:
+                    coord.pop(idx[1])
+                    BlocHeight.pop(idx[1])
+                    BlocAlt.pop(idx[1])
+                    BlocMaxAlt.pop(idx[1])
+            msg = '[Geom Cor] There is a hole that will split the main surface in two blocs \n'
+            if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+    except:
+        msg = '[Poly Error] Some error are present in the polygon parts. Some are identified as being inside others...\n'
+        print(msg[:-1])
+        if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure(0)
+        for i in coord:
+            xs, ys = zip(*i)
+            plt.plot(xs, ys, '-.')
+        return
+        # plt.show()
+        # titre = 'FormularId : '+str(DB.properties['FormularId'])+'\n 50A_UUID : '+str(DB.properties['50A_UUID'])
+        # plt.title(titre)
+        # plt.savefig(self.name+ '.png')
+        # plt.close(fig)
+    return coord
+
+def check4UpperTower(BlocHeight,BlocAlt,idx):
+    return BlocHeight[idx[1]] - BlocHeight[idx[0]] > 0 and BlocAlt[idx[1]] - BlocAlt[idx[0]] > 0
+
+
+def checkForMerge(coord,DebugMode,LogFile,BlocHeight,BlocAlt,UpperBloc):
+    poly2merge =  []
+    area2merge = []
+    for idx, coor in enumerate(coord):
+        for i in range(len(coord) - idx - 1):
+            if Polygon(coor).contains(Polygon(coord[idx + i + 1])) and not check4UpperTower(BlocHeight,BlocAlt,[idx, idx + i + 1]):
+                poly2merge.append([idx, idx + i + 1])
+                area2merge.append([Polygon(coor).area, Polygon(coord[idx + i + 1]).area])
+            if Polygon(coord[idx + i + 1]).contains(Polygon(coor)) and not check4UpperTower(BlocHeight,BlocAlt,[idx + i + 1, idx]):
+                poly2merge.append([idx + i + 1, idx])
+                area2merge.append([Polygon(coord[idx + i + 1]).area, Polygon(coor).area])
+            if check4UpperTower(BlocHeight, BlocAlt, [idx, idx + i + 1]) or check4UpperTower(BlocHeight,BlocAlt,[idx + i + 1, idx]):
+                UpperBloc = True
+    for i, c in enumerate(poly2merge):
+        for j, c1 in enumerate(poly2merge):
+            if c[0] == c1[1]:
+                msg = '[Geom Error] The building has three polygons inside one another...please check your input file \n'
+                if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+                return
+            if (c[0] == c1[0] or c[1] == c1[1]) and i != j:
+                msg = '[Geom Warning] Some polygons are asked to be merged with 2 or more others...this can lead to Poly Error because merging with the first one might be not compatible with further mergings...please check initial file \n'
+                if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+    return poly2merge,area2merge,UpperBloc
 
 def section(first, last, coords):
     section_on_hole = []
@@ -267,6 +366,7 @@ def CheckMultiBlocFootprint(blocs,blocAlt,tol =1):
     if len(blocs)>1:
         validMultibloc = False
         for idxbloc1,idxbloc2 in itertools.product(enumerate(blocs),repeat = 2):
+            done = False
             if idxbloc1[1] != idxbloc2[1] and blocAlt[idxbloc1[0]]==blocAlt[idxbloc2[0]]:
                 bloc1 = idxbloc1[1]
                 bloc2 = idxbloc2[1]
@@ -274,41 +374,46 @@ def CheckMultiBlocFootprint(blocs,blocAlt,tol =1):
                     edge = [bloc1[ptidx],bloc1[(ptidx+1)%len(bloc1)]]
                     comEdges = []
                     for ptidx1,pt1 in enumerate(bloc2):
+                        if ptidx1 == 1 and ptidx ==13 and idxbloc1[0]==2 and idxbloc2[0]==4:
+                            tutu =1
                         edge1 = [bloc2[ptidx1], bloc2[(ptidx1+1)%len(bloc2)]]
                         if is_parallel(edge,edge1,10) and confirmMatch(edge, edge1, tol):
                             validMultibloc = True
                             pt1 = False
                             pt2 = False
-                            if LineString(edge1).distance(Point(edge[0])) < tol:
-                                edge[0] = point_on_line(edge1[0], edge1[1],edge[0])
-                                edge[0],conf= CoordAdjustement(edge1, edge[0], tol)
+                            if LineString(edge).distance(Point(edge1[0])) < tol:
+                                edge1[0] = point_on_line(edge[0], edge[1],edge1[0])
+                                edge1[0],conf= CoordAdjustement(edge, edge1[0], tol)
                                 pt1 = True
-                            if LineString(edge1).distance(Point(edge[1])) < tol:
-                                edge[1] = point_on_line(edge1[0], edge1[1],edge[1])
-                                edge[1],conf = CoordAdjustement(edge1, edge[1], tol)
+                            if LineString(edge).distance(Point(edge1[1])) < tol:
+                                edge1[1] = point_on_line(edge[0], edge[1],edge1[1])
+                                edge1[1],conf = CoordAdjustement(edge, edge1[1], tol)
                                 pt2 = True
                             if pt1 and pt2:
-                                if abs(getAngle(edge1, edge) -180) < 5:
-                                    comEdges.append([edge[1],edge[0]])
+                                if abs(getAngle(edge, edge1) -180) < 5:
+                                    comEdges.append([edge1[1],edge1[0]])
                                 else:
-                                    comEdges.append(edge)
-                    #lets make a try to see if the correction doesn't lead to a false polygon
-                    PolyTest = copy.deepcopy(bloc1)
-                    PolyTest[ptidx] = edge[0]
-                    PolyTest[(ptidx + 1) % len(bloc1)] = edge[1]
-                    if Polygon(PolyTest).is_valid:
-                        bloc1[ptidx] = edge[0]
-                        bloc1[(ptidx + 1) % len(bloc1)] = edge[1]
+                                    comEdges.append(edge1)
+                            #lets make a try to see if the correction doesn't lead to a false polygon
+                            if pt1 or pt2:
+                                PolyTest = copy.deepcopy(bloc2)
+                                PolyTest[ptidx1] = edge1[0]
+                                PolyTest[(ptidx1 + 1) % len(bloc2)] = edge1[1]
+                                if Polygon(PolyTest).is_valid:
+                                    if PolyTest == bloc2 : done = True
+                                    else:
+                                        bloc2[ptidx1] = edge1[0]
+                                        bloc2[(ptidx1 + 1) % len(bloc2)] = edge1[1]
                     #lets check if these nodes are also on bloc2
                     #first which bloc is concerned
                     for comEdge in comEdges:
-                        if comEdge[0] in bloc2 and comEdge[1] not in bloc2:
-                            index = bloc2.index(comEdge[0])+1
-                            bloc2.insert(index,comEdge[1])
+                        if comEdge[0] in bloc1 and comEdge[1] not in bloc1:
+                            index = bloc1.index(comEdge[0])+1
+                            bloc1.insert(index,comEdge[1])
                             #bloc2 = bloc2[:index]+[comEdge[1]]+bloc2[index:]
-                        if comEdge[1] in bloc2 and comEdge[0] not in bloc2:
-                            index = bloc2.index(comEdge[1])
-                            bloc2.insert(index,comEdge[0])
+                        if comEdge[1] in bloc1 and comEdge[0] not in bloc1:
+                            index = bloc1.index(comEdge[1])
+                            bloc1.insert(index,comEdge[0])
                             #bloc2 = bloc2[:index]+[comEdge[0]]+bloc2[index:]
     return blocs,validMultibloc
 
@@ -337,7 +442,13 @@ def getAngle(line1,line2):
     # a = plt.gca()
     # a.set_aspect('equal', adjustable='box')
     # print(np.rad2deg((ang1 - ang2) % (2 * np.pi))%180, abs(np.rad2deg(np.arccos(round(v.dot(w) / (np.linalg.norm(v) * np.linalg.norm(w)), 4)))))
-    return abs(np.rad2deg(np.arccos(round(v.dot(w) / (np.linalg.norm(v) * np.linalg.norm(w)), 4))))
+    # import warnings
+    # warnings.simplefilter('error')
+    try:
+        angle= abs(np.rad2deg(np.arccos(round(v.dot(w) / (np.linalg.norm(v) * np.linalg.norm(w)), 4))))
+    except:
+        angle = 0
+    return angle
 
 # def getNewAngle(line1,line2):
 #     if getDistance(line1[0],line2[1]) > max(getDistance(line1[0],line1[1]),getDistance(line2[0],line2[1])):

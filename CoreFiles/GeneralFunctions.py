@@ -583,8 +583,6 @@ def ManageGlobalPlots(BldObj,IdfObj,FigCenter,WindSize, PlotBldOnly,nbcase = [],
                 adiabsurf.append(s.Name[:s.Name.index('_')])
                 nbadiab += 1
     RoofSpecialColor = "firebrick"
-    if nbcase in [39]:
-        RoofSpecialColor = 'limegreen'
     IdfObj.view_model(test= True if PlotBldOnly+LastBld>0 else False, FigCenter=FigCentroid, WindSize=2 * WindSize,
                        RoofSpecialColor=RoofSpecialColor)
     return FigCenter,WindSize

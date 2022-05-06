@@ -427,6 +427,10 @@ class Building:
                     #         new.remove(pt)
                     # newpolycoor, node = core_perim.CheckFootprintNodes(new, 5)
                     newpolycoor, node = GeomUtilities.CleanPoly(j, self.DistTol,self.roundVal)
+                    if len(newpolycoor) < 3:
+                        msg = '[Geom Cor] At least one polygon has been ignored because of the distance thresholds \n'
+                        if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+                        continue
                     coord.append(newpolycoor)
                     node2remove.append(node)
             if singlepoly:
@@ -445,6 +449,10 @@ class Building:
                     if len(DB.geometry.coordinates[idx][0]) > 2 : poly = DB.geometry.coordinates[idx][0]
                     else: poly = DB.geometry.coordinates[idx]
                     missedPoly,node = GeomUtilities.CleanPoly(poly, self.DistTol,self.roundVal)
+                    if len(missedPoly) < 3:
+                        msg = '[Geom Cor] At least one polygon has been ignored because of the distance thresholds \n'
+                        if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+                        continue
                     coord.append(missedPoly)
                     node2remove.append(node)
                     height = DB.geometry.poly3rdcoord[idx] if DB.geometry.poly3rdcoord[idx]>0 else self.height
@@ -485,7 +493,7 @@ class Building:
             BlocMaxAlt = [val for idx, val in enumerate(BlocMaxAlt) if idx not in idx2remove]
             BlocHeight = [val for idx, val in enumerate(BlocHeight) if idx not in idx2remove]
             node2remove = [val for idx, val in enumerate(node2remove) if idx not in idx2remove]
-            msg = ('[Geom Info] At least one polygon has been removed because of an altitude equal to the lowest one along all polygons. \n')
+            msg = ('[Geom Cor] At least one polygon has been removed because of an altitude equal to the lowest one along all polygons. \n')
             if msg and DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         newbloccoor = []
         node2ignoredforPolyMatch = []
@@ -549,77 +557,14 @@ class Building:
                 BlocMaxAlt[idxorder[0]] = max(BlocMaxAlt[idx[0]],BlocMaxAlt[idx[1]])
                 BlocMaxAlt.pop(idxorder[1])
                 OffsetFrompop += 1
-        poly2merge = []
-        area2merge = []
-        for idx, coor in enumerate(coord):
-            for i in range(len(coord) - idx - 1):
-                if Polygon(coor).contains(Polygon(coord[idx + i + 1])):
-                    poly2merge.append([idx, idx + i + 1])
-                    area2merge.append([Polygon(coor).area,Polygon(coord[idx + i + 1]).area])
-                if Polygon(coord[idx + i + 1]).contains(Polygon(coor)):
-                    poly2merge.append([idx + i + 1,idx])
-                    area2merge.append([Polygon(coord[idx + i + 1]).area,Polygon(coor).area])
-        for i, c in enumerate(poly2merge):
-            for j, c1 in enumerate(poly2merge):
-                if c[0] == c1[1]:
-                    msg = '[Geom Error] The building has three polygons inside one another...please check your input file \n'
-                    if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
-                    return
-                if (c[0] == c1[0] or c[1] == c1[1]) and i!=j:
-                    msg = '[Geom Warning] Some polygons are asked to be merged with 2 or more others...this can lead to Poly Error because merging with the first one might be not compatible with further mergings...please check initial file \n'
-                    if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
-        try:
-            for i, idx in enumerate(poly2merge):
-                #lets check if it's a tower of smaller footprint than the base:
-                SmallerTower = False
-                if BlocHeight[idx[1]]-BlocHeight[idx[0]]>0:
-                    if BlocAlt[idx[1]] - BlocAlt[idx[0]] > 0:
-                        UpperBloc = True
-                        continue
-                    else: SmallerTower = True
-                    #continue
-                newtry = False
-                if newtry :
-                    newSurface = GeomUtilities.mergeHole(coord[idx[0]],coord[idx[1]])
-                    coord[idx[0]] = newSurface[0]
-                    coord[idx[1]] = newSurface[1]
-                else:
-                    new_surfaces = GeomUtilities.mergeGeomeppy(coord[idx[0]], coord[idx[1]])
-                    #new_surfaces = break_polygons(Polygon3D(coord[idx[0]]), Polygon3D(coord[idx[1]]))
-                    xs, ys, zs = zip(*list(new_surfaces[0]))
-                    coord[idx[0]] = [(xs[nbv], ys[nbv]) for nbv in range(len(xs))]
-                    if len(new_surfaces) > 1:
-                        xs, ys, zs = zip(*list(new_surfaces[1]))
-                        if SmallerTower:
-                            coord.append([(xs[nbv], ys[nbv]) for nbv in range(len(xs))])
-                            BlocHeight.append(BlocHeight[idx[0]])
-                            BlocAlt.append(BlocAlt[idx[0]])
-                            BlocMaxAlt.append(BlocMaxAlt[idx[0]])
-                        else:
-                            coord[idx[1]] = [(xs[nbv], ys[nbv]) for nbv in range(len(xs))]
-                            BlocHeight[idx[1]] = BlocHeight[idx[0]]
-                    else:
-                        coord.pop(idx[1])
-                        BlocHeight.pop(idx[1])
-                        BlocAlt.pop(idx[1])
-                        BlocMaxAlt.pop(idx[1])
-                msg = '[Geom Cor] There is a hole that will split the main surface in two blocs \n'
-                GrlFct.Write2LogFile(msg, LogFile)
-        except:
-            msg = '[Poly Error] Some error are present in the polygon parts. Some are identified as being inside others...\n'
-            print(msg[:-1])
-            GrlFct.Write2LogFile(msg, LogFile)
-            import matplotlib.pyplot as plt
-            fig = plt.figure(0)
-            for i in coord:
-                xs, ys = zip(*i)
-                plt.plot(xs, ys, '-.')
-            return
-            #plt.show()
-            # titre = 'FormularId : '+str(DB.properties['FormularId'])+'\n 50A_UUID : '+str(DB.properties['50A_UUID'])
-            # plt.title(titre)
-            # plt.savefig(self.name+ '.png')
-            # plt.close(fig)
+
+        nomoremerge = False
+        pol2avoid = []
+        while not nomoremerge:
+            poly2merge,area2merge,UpperBloc = GeomUtilities.checkForMerge(coord,DebugMode,LogFile,BlocHeight,BlocAlt,UpperBloc)
+            if not poly2merge: nomoremerge = True
+            else: coord = GeomUtilities.MakeMerge(coord,[poly2merge[0]],DebugMode,LogFile,BlocHeight,BlocAlt,BlocMaxAlt)
+
     #before submitting the full coordinates, we need to check correspondance in case of multibloc
         #this check is made after encountering a specific case that never appeared form now...
         idx2remove = []
@@ -632,6 +577,8 @@ class Building:
             BlocMaxAlt = [val for idx, val in enumerate(BlocMaxAlt) if idx not in idx2remove]
             msg = '[Geom Cor] ' + str(len(idx2remove)) + ' polygons were removed because of area below 1m2 \n'
             if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+        for idx,poly in enumerate(coord):
+            coord[idx],node = GeomUtilities.CleanPoly(poly,self.DistTol,self.roundVal)
         coord, validFootprint = GeomUtilities.CheckMultiBlocFootprint(coord,BlocAlt,tol = self.DistTol)
         if UpperBloc:
             validFootprint = True
