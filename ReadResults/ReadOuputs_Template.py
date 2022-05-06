@@ -287,7 +287,7 @@ if __name__ == '__main__' :
         path, Names4Plots,CaseNames = getPathList(config)
     print('[Studied Results Folder] '+str(Names4Plots))
     #Names (attributes) wanted to be taken in the pickle files for post-processing. The time series are agrregated into HeatedArea, NonHeatedArea and OutdoorSite
-    extraVar=['AreaBasedFlowRate','HeatedArea','BlocFootprintArea','height','MaxShadingDist']
+    extraVar=['AreaBasedFlowRate','BlocHeight','BlocNbFloor','HeatedArea','BlocFootprintArea','height','MaxShadingDist']
     #because we can have several path for several studies we want to overplot.
 
     #Path can be written in hard for specific test
@@ -316,8 +316,8 @@ if __name__ == '__main__' :
 
 
     #The opening order does not follows the building simulation number while opening the data. Thus, this first graphs provides the correspondance between the other plots, building number and their simulation number
-    # IndexFig = Utilities.createSimpleFig()
-    # plotIndex(Res, IndexFig, Names4Plots)
+    IndexFig = Utilities.createSimpleFig()
+    plotIndex(Res, IndexFig, Names4Plots)
     #this 2nd plot gives the size of the error file. It gives insights if some buildings causses particulary over whole issue in the simulation process
     ErrorFig = Utilities.createMultilFig('',2,linked=False)
     plotErrorFile(Res, ErrorFig, Names4Plots)
