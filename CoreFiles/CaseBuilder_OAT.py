@@ -186,6 +186,7 @@ def LaunchProcess(SimDir,FirstRun,TotNbRun,currentRun,keyPath,nbcase,CorePerim,F
                                        str(round(time.time() - startIniti, 2)) + ' sec\n', LogFile)
 
     if MakePlotOnly:
+        idf.idfname += ' / ' +building.BuildID['BldIDKey']+' : '+ str(building.BuildID[building.BuildID['BldIDKey']])
         return building,idf, 'OK'
 
     # lets define the zone level now

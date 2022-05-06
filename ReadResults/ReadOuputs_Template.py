@@ -212,7 +212,7 @@ def plotIndex(GlobRes,FigName,name):
         Res = GlobRes[nb]
         locref = [GlobRes[nb]['BuildID'][i][key] for i in range(len(GlobRes[nb]['BuildID']))]
         index_y,varx = Utilities.getSortedIdx(reference,locref)
-        vary = [Res['SimNum'][idx] for idx in index_y]
+        vary = locref #[Res['SimNum'][idx] for idx in index_y]
         Utilities.plotBasicGraph(FigName['fig_name'].number, FigName['ax0'], varx, [vary], 'Building',
                                  [name[nb]],
                                  'Building num in the GeojSon file', signe[np.random.randint(0, 10)])
