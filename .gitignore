@@ -1,6 +1,10 @@
 # mac files
 .DS_Store
 
+# compiled py files
+__pycache__
+*.pyc
+
 # vscode local settings
 .vscode
 *.code-workspace
