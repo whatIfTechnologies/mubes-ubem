@@ -440,7 +440,7 @@ def GetData(path,extravariables = [], Timeseries = [],BuildNum=[],BldList = []):
 
     #lets get the mandatory variables
     variables=['EP_Elec','EP_Heat','EP_Cool','EP_DHW','SimNum','EPC_Elec','EPC_Heat','EPC_Cool','EPC_Tot',
-               'DB_Surf','EP_Area','BuildID','BldSimName']
+               'DB_Surf','EP_Area','BuildID','BldSimName','ExtEnvSurf','IntVolume']
     # lest build the Res dictionnary
     for key in variables:
         Res[key] = []
@@ -481,6 +481,10 @@ def GetData(path,extravariables = [], Timeseries = [],BuildNum=[],BldList = []):
         except:
             Res['DB_Surf'].append(BuildObj.surface)
             #Res['DB_Surf'].append(BuildObj.ATemp)
+        try: Res['ExtEnvSurf'].append(ResBld[key]['ExtEnvSurf'])
+        except: Res['ExtEnvSurf'] = 0
+        try: Res['IntVolume'].append(ResBld[key]['IntVolume'])
+        except: Res['IntVolume'] = 0
         eleval = 0
         for x in BuildObj.EPCMeters['ElecLoad']:
             if BuildObj.EPCMeters['ElecLoad'][x]:

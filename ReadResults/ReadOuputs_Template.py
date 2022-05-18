@@ -315,6 +315,9 @@ if __name__ == '__main__' :
         except: pass
 
 
+    # with open('ShapeFact.txt', 'w') as f:
+    #     for idx,val in enumerate(Res[0]['SimNum']):
+    #         f.write(str(val)+'\t'+str(Res[0]['ExtEnvSurf'][idx])+'\t'+str(Res[0]['IntVolume'][idx])+'\n')
     #The opening order does not follows the building simulation number while opening the data. Thus, this first graphs provides the correspondance between the other plots, building number and their simulation number
     IndexFig = Utilities.createSimpleFig()
     plotIndex(Res, IndexFig, Names4Plots)

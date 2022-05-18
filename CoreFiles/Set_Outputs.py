@@ -349,12 +349,23 @@ def Read_Outputhtml(CaseName):
     ExtWin = [name[0] for name in Windows_exterior]
     ExtNames = ExtSurf+ExtWin
     Res = {}
+    #grab the building Shape FActor
+    Envelope = htables[13][1][2][1]
+    gotit = False
+    ii = 0
+    while not gotit:
+        if 'Conditioned Total' in htables[16][1][ii][0]:
+            Volume = htables[16][1][ii][4]
+            gotit = True
+        else:
+            ii += 1
+    ShapeFactor= Envelope / Volume
 
     for key in range(len(htables[EndUsesIdx][1][1:-2])):
         Res[htables[EndUsesIdx][1][key+1][0]] = {}
         for val in range(len(htables[EndUsesIdx][1][0][1:])):
             Res[htables[EndUsesIdx][1][key+1][0]][htables[EndUsesIdx][1][0][val+1]] = htables[EndUsesIdx][1][key+1][val+1]
-    return {'GlobRes':Res, 'OutdoorSurfacesNames' : ExtNames}
+    return {'GlobRes':Res, 'OutdoorSurfacesNames' : ExtNames, 'ExtEnvSurf' : Envelope, 'IntVolume': Volume}
 
 def Read_OutputError(CaseName):
     fname = CaseName
