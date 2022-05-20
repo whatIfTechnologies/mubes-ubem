@@ -10,8 +10,8 @@ path2addgeom = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())),'geome
 sys.path.append(path2addgeom)
 #add the reauired path for all the above folder
 sys.path.append('..')
-MUBES_Paths = os.path.normcase(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), 'MUBES_UBEM'))
-sys.path.append(MUBES_Paths)
+# MUBES_Paths = os.path.normcase(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), 'mubes-ubem'))
+# sys.path.append(MUBES_Paths)
 
 import CoreFiles.GeneralFunctions as GrlFct
 import CoreFiles.LaunchSim as LaunchSim

@@ -153,6 +153,7 @@ class Building:
         self.roundVal = self.GE['VertexPrecision']
         self.AltTolerance = self.GE['AltitudeTolerance']
         self.MaxShadingDist = self.GE['MaxShadingDist']
+        DB,extraShade = self.check4UpperTowerAddition(DB)
         self.footprint,  self.BlocHeight, self.BlocNbFloor, self.BlocAlt, self.BlocMaxAlt = self.getfootprint(DB,LogFile,self.nbfloor,DebugMode)
         self.AggregFootprint = self.getAggregatedFootprint()
         self.RefCoord = self.getRefCoord()
@@ -163,6 +164,7 @@ class Building:
         self.EPHeatedArea = self.getEPHeatedArea(LogFile,DebugMode)
         self.AdjacentWalls = [] #this will be appended in the getshade function if any present
         self.shades = self.getshade(nbcase, DataBaseInput,LogFile, PlotOnly=PlotOnly,DebugMode=DebugMode)
+        self.AddeExtraShade(extraShade)
         self.Materials = config['3_SIM']['BaseMaterial']
         self.InternalMass = config['3_SIM']['InternalMass']
         self.MakeRelativeCoord(roundfactor = 4)# we need to convert into local coordinate in order to compute adjacencies with more precision than keeping thousand of km for x and y
@@ -190,24 +192,32 @@ class Building:
             #     else:
             #         self.setTempUpL = [50]*len(BE['setTempUpL'])
 
-    #No more needed, embedded in the MakeShadowingWallFile
-    # def getEdgesHeights(self,roundfactor = 8):
-    #     GlobalFootprint = Polygon2D(self.AggregFootprint[:-1])
-    #     EdgesHeights = {'Height':[],'Edge':[],'BlocNum': []}
-    #     for edge in GlobalFootprint.edges:
-    #         EdgesHeights['Edge'].append([(round(x+self.RefCoord[0],roundfactor),round(y+self.RefCoord[1],roundfactor)) for x,y in edge.vertices])
-    #         EdgesHeights['Height'].append(0)
-    #         EdgesHeights['BlocNum'].append(0)
-    #     for idx,poly in enumerate(self.footprint):
-    #         localBloc = Polygon2D(poly)
-    #         for edge,edge_reversed in zip(localBloc.edges,localBloc.edges_reversed):
-    #             Heightidx1 = [idx for idx,val in enumerate(GlobalFootprint.edges) if edge == val]
-    #             Heightidx2 = [idx for idx, val in enumerate(GlobalFootprint.edges_reversed) if edge == val]
-    #             if Heightidx1 or Heightidx2:
-    #                 Heigthidx = Heightidx1 if Heightidx1 else Heightidx2
-    #                 EdgesHeights['Height'][Heigthidx[0]] = self.BlocHeight[idx]
-    #     EdgesHeights['BldID']= self.BuildID
-    #     return EdgesHeights
+    def check4UpperTowerAddition(self,DB):
+        UpperTowerFile = 'C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\mubes-ubem\\ModelerFolder\\UpperTower.json'
+        extraShade = {}
+        if os.path.isfile(UpperTowerFile):
+            with open(UpperTowerFile) as json_file:
+                UpperTower = json.load(json_file)
+            for key in UpperTower.keys():
+                if key == self.BuildID[self.BuildID['BldIDKey']] and UpperTower[key]['UpperTower']['Coord']:
+                    DB.geometry.coordinates.append(UpperTower[key]['UpperTower']['Coord'])
+                    DB.geometry.coordinates.append(UpperTower[key]['UpperTower']['Coord'])
+                    DB.geometry.poly3rdcoord.append(UpperTower[key]['TowerAlt'])
+                    DB.geometry.poly3rdcoord.append(UpperTower[key]['TowerAlt']+UpperTower[key]['UpperTower']['Height'])
+                else:
+                    for idx, node in enumerate(UpperTower[key]['UpperTower']['Coord']):
+                        extraShade['TowerId'+str(key)+'_surf'+str(idx)] = {}
+                        node1 = UpperTower[key]['UpperTower']['Coord'][(idx+1)%len(UpperTower[key]['UpperTower']['Coord'])]
+                        extraShade['TowerId'+str(key)+'_surf'+str(idx)]['Vertex'] = [node,node1]
+                        extraShade['TowerId'+str(key)+'_surf'+str(idx)]['height'] = UpperTower[key]['TowerAlt']+UpperTower[key]['UpperTower']['Height']
+                        extraShade['TowerId' + str(key) + '_surf' + str(idx)]['distance'] = 10
+        return DB,extraShade
+
+    def AddeExtraShade(self,extraShade):
+        for key in extraShade:
+            self.shades[key] = {}
+            for subkey in extraShade[key]:
+                self.shades[key][subkey] = extraShade[key][subkey]
 
     def MakeRelativeCoord(self,roundfactor= 8):
         # we need to convert change the reference coordinate because precision is needed for boundary conditions definition:
@@ -330,7 +340,7 @@ class Building:
         if not BuildID['BldIDKey']:
             BuildID['BldIDKey'] = 'NoBldID'
             BuildID['NoBldID'] = 'NoBldID'
-        else: BuildID[BuildID['BldIDKey']] = Id
+        else: BuildID[BuildID['BldIDKey']] = str(Id)
         msg = '[Bld ID] '+ 'BldIDKey'+' : ' + str(BuildID['BldIDKey']) + '\n'
         GrlFct.Write2LogFile(msg, LogFile)
         msg = '[Bld ID] '+ str(BuildID['BldIDKey'])+' : ' + str(BuildID[BuildID['BldIDKey']]) + '\n'
@@ -761,6 +771,7 @@ class Building:
                 idx = 0
             else:
                 idx += 1
+                if idx>len(RemainingBlocs)-1:RemainingBlocs.remove(RemainingBlocs[-1])
         # in order to close the loop if not already done
         if AggregFootprint[0] != AggregFootprint[-1]:
             AggregFootprint.append(AggregFootprint[0])
