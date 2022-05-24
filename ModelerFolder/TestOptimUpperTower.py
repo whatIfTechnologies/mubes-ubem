@@ -158,12 +158,19 @@ def CostFunction(x,*args):
         UpperTower[BldIndex[base]] = checkTowerLocation(PlayGround[BldIndex[base]], x=loc[0]/100,y=loc[1]/100,
                                             height=heigth,area=area,shapeF=ShapeFact, angle=angle*10)
     SaveAndWriteNew(copy.deepcopy(PlayGround),UpperTower)
+    globResPath = os.path.join(os.path.dirname(MUBES_Paths), 'MUBES_SimResults', 'OptimShadowRes')
+    liste = os.listdir(globResPath)
+    nbfile = 0
+    for file in liste:
+        if file[-5:] == '.json':
+            nbfile += 1
+    CaseName = 'OptimShadow'+str(nbfile)
     cmdline = [
         os.path.abspath('C:/Users/xav77/Envs/MUBES_UBEM/Scripts/python.exe'),
         os.path.join(MUBES_Paths,'ModelerFolder','runMUBES.py')
     ]
-    cmdline.append('-CONFIG')
-    cmdline.append('''{"2_CASE": {"0_GrlChoices" :{ "CaseName" : "OptimShadow"}}}''')
+    # cmdline.append('-CONFIG')
+    # cmdline.append('''{"2_CASE": {"0_GrlChoices" :{ "CaseName" :"'''+CaseName+'"}}}''')
     check_call(cmdline, cwd=os.path.join(MUBES_Paths,'ModelerFolder'))
     Res_Path = os.path.join(os.path.dirname(MUBES_Paths),'MUBES_SimResults','OptimShadow','Sim_Results')
     extraVar = ['HeatedArea'] #some toher could be added for the sake fo cost_function
@@ -171,16 +178,10 @@ def CostFunction(x,*args):
     TotalSolar = 0
     for bld in Res['HeatedArea']:
         TotalSolar += sum(bld['Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area'])
-    globalCostVar = 1/(TotalSolar/1e9)
-    globResPath = os.path.join(os.path.dirname(MUBES_Paths),'MUBES_SimResults','OptimShadowRes')
-    liste = os.listdir(globResPath)
-    nbfile= 0
-    for file in liste:
-        if file[-5:] == '.json':
-            nbfile+=1
+    globalCostVar = 1e9/(TotalSolar)
     shutil.copyfile(os.path.join(MUBES_Paths,'ModelerFolder','UpperTower.json'), os.path.join(globResPath,'UpperTower'+str(nbfile)+'.json'))
     with open(os.path.join(globResPath,'CostFunctionRes.txt'), 'a') as f:
-        f.write(str(globalCostVar))
+        f.write(str(globalCostVar)+'\n')
     os.chdir(currentPath)
     return globalCostVar
 

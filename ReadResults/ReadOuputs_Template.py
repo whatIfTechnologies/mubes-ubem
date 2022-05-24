@@ -291,11 +291,11 @@ if __name__ == '__main__' :
     #because we can have several path for several studies we want to overplot.
 
     #Path can be written in hard for specific test
-    # path = ['C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\MinnebergAlt\\Build_0\\Sim_Results']
-    # path.append('C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\MinnebergAlt\\Build_1\\Sim_Results')
+    path = ['C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\OptimShadow42\\Sim_Results']
+    path.append('C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\Test42\\Sim_Results')
     # path.append('C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\MUBES_SimResults\\ecmnewcalibyearly\\build_39\\Sim_Results')
-    # CaseNames = ['5','25','39']
-
+    CaseNames = ['Test1','Test2','39']
+    Names4Plots = CaseNames
     Res = {}
     TimeSerieList=[]
     TimeSerieUnit = []
