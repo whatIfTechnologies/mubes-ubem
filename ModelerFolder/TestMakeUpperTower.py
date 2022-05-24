@@ -109,16 +109,42 @@ def getNeededBase(bld,GeoFeature):
     PlayGround = getFilteredVal(PlayGround)
     return BldID, PlayGround
 
-def getFilteredVal(PlayGround):
+def getFilteredVal(Bld):
     #lets defined the normalized value in wich the min and max area are possible to restraint the range of possibility for optimization
-    PlayGround['maxFootprint_m2'] = int(Polygon(PlayGround['FootPrint']).area)
-    PossibleArea = [PlayGround['minFootprint_m2'],PlayGround['maxFootprint_m2']]
+    Bld['maxFootprint_m2'] = min(int(0.5*Polygon(Bld['FootPrint']).area),Bld['maxFootprint_m2'])
+    PossibleArea = [Bld['minFootprint_m2'],Bld['maxFootprint_m2']]
     shapeFactor = [0.99,1]
     edge1 = (PossibleArea[0]/shapeFactor[0])**0.5
     edge2 = edge1*shapeFactor[0]
     DistLim = min(edge1,edge2)/2
-    PlayGround['DistLim'] = DistLim/min(PlayGround['EdgeLength'])
-    return PlayGround
+    Bld['DistLim'] = DistLim/min(Bld['EdgeLength'])
+    Bld = getMatrixOfSpace(Bld)
+    return Bld
+
+def getMatrixOfSpace(Bld):
+    import numpy as np
+    PossibleArea = np.linspace(Bld['minFootprint_m2'], Bld['maxFootprint_m2'],10)
+    shapeFactor = [0.8,0.9,1,1.1,1.2]
+    # SpaceOfSol = np.arange(100*100*9*len(PossibleArea)*len(shapeFactor))
+    # SpaceOfSol = np.reshape(SpaceOfSol, (100, 100, 9, len(PossibleArea), len(shapeFactor)))
+    SpaceOfSolNew = {}
+    for A,area in enumerate(PossibleArea):
+        area = int(area)
+        SpaceOfSolNew[area] = {}
+        for sf,SFact in enumerate(shapeFactor):
+            SpaceOfSolNew[area][SFact] = {}
+            for angle in range(9):
+                SpaceOfSolNew[area][SFact][angle] = []
+                for x in range(100):
+                    for y in range(100):
+                        if checkTower(Bld, x=x/100, y=y/100, height=9, area=area, shapeF=SFact, angle=angle*10):
+                            # SpaceOfSol[x,y,angle,A,sf] = 1
+                            SpaceOfSolNew[area][SFact][angle].append((x,y))
+                        # else:
+                        #     SpaceOfSol[x, y, angle, A, sf] = 0
+    # Bld['Space'] = SpaceOfSol
+    Bld['SpaceNew'] = SpaceOfSolNew
+    return Bld
 
 def arrangePlayGround(GlobPlayGround):
     keys = ['BldID','BoxCoord','FootPrint','RefAngle','Origin']
@@ -185,14 +211,23 @@ def Makeplot(poly):
 
 def SaveAndWrite(Matches):
     print('\nAll building treated')
-    j = json.dumps(Matches)
-    with open(os.path.join(MUBES_Paths,'ModelerFolder','UpperTower.json'), 'w') as f:
-        f.write(j)
+    import pickle
+    with open(os.path.join(MUBES_Paths,'ModelerFolder','UpperTower.pickle'), 'wb') as handle:
+        pickle.dump(Matches, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # for key in Matches.keys():
+    #     del Matches[key]['Space']
+    # j = json.dumps(Matches)
+    # with open(os.path.join(MUBES_Paths,'ModelerFolder','UpperTower.json'), 'w') as f:
+    #     f.write(j)
 
 def SaveAndWriteNew(Matches,Towers):
     for key in Matches.keys():
         Matches[key]['UpperTower'] = Towers[key]
     print('\nAll building treated')
+    for key in Matches.keys():
+        del Matches[key]['Space']
+        del Matches[key]['SpaceNew']
     j = json.dumps(Matches)
     with open(os.path.join(MUBES_Paths,'ModelerFolder','UpperTower.json'), 'w') as f:
         f.write(j)
@@ -200,27 +235,28 @@ def SaveAndWriteNew(Matches,Towers):
 def forFun():
     TestCase = {}
     PlayGround = getBasePlayGround()
-    for Bld in PlayGround.keys():
-        done = False
-        for x in range(0, 100):
-            for y in range(0, 100):
-                for teta in range(36):
-                    PlayGround[Bld]['UpperTower'] = checkTowerLocation(PlayGround[Bld], x=x / 100, y=y / 100, height=30,
-                                                                       area=300, shapeF=0.2, angle=teta * 10)
-                    if Polygon(PlayGround[Bld]['FootPrint']).contains(Polygon(PlayGround[Bld]['UpperTower']['Coord'])):
-                        # Makeplot(PlayGround[Bld]['BoxCoord'])
-                        # Makeplot(PlayGround[Bld]['FootPrint'])
-                        # Makeplot(PlayGround[Bld]['UpperTower']['Coord'])
-                        # plt.show()
-                        done = True
-                    if done: break
-                if done: break
-            if done: break
-        if not done:
-            PlayGround[Bld]['UpperTower']['Coord'] = []
-            print('Bld failed : '+str(Bld))
-        else: print('Bld finished : '+str(Bld))
     SaveAndWrite(PlayGround)
+    # for Bld in PlayGround.keys():
+    #     done = False
+    #     for x in range(0, 100):
+    #         for y in range(0, 100):
+    #             for teta in range(36):
+    #                 PlayGround[Bld]['UpperTower'] = checkTowerLocation(PlayGround[Bld], x=x / 100, y=y / 100, height=30,
+    #                                                                    area=300, shapeF=0.2, angle=teta * 10)
+    #                 if Polygon(PlayGround[Bld]['FootPrint']).contains(Polygon(PlayGround[Bld]['UpperTower']['Coord'])):
+    #                     # Makeplot(PlayGround[Bld]['BoxCoord'])
+    #                     # Makeplot(PlayGround[Bld]['FootPrint'])
+    #                     # Makeplot(PlayGround[Bld]['UpperTower']['Coord'])
+    #                     # plt.show()
+    #                     done = True
+    #                 if done: break
+    #             if done: break
+    #         if done: break
+    #     if not done:
+    #         PlayGround[Bld]['UpperTower']['Coord'] = []
+    #         print('Bld failed : '+str(Bld))
+    #     else: print('Bld finished : '+str(Bld))
+    # SaveAndWrite(PlayGround)
 
 if __name__ == '__main__' :
     forFun()
