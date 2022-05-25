@@ -216,7 +216,7 @@ def getConfig(App = ''):
     elif ConfigFromArg:
         config, msg = ChangeConfigOption(config, ConfigFromArg)
         if msg: print(msg)
-        config['2_CASE']['0_GrlChoices']['OutputFile'] = 'Outputs4API.txt'
+        #config['2_CASE']['0_GrlChoices']['OutputsFile'] = 'Outputs4API.txt'
     else:
         localConfig,filefound,msg = check4localConfig(os.getcwd())
         if msg: print(msg)

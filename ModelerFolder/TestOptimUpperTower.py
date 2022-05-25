@@ -71,34 +71,23 @@ def grabParameters(x):
         param[base]['height'] = x[5+6*base]
     return param
 
-# def constraints(x,*args):
-#     #this function gives the constraints to each parameter to be tuned
-#     #variable have their own limits given in the bounds
-#     #other constraints can be given here as function using the global vector of parameter x
-#     #the first constraint is thet the tower should fully stand on the base
-#     #(x, y, angle, area, shapeFactor, height)
-#     param = grabParameters(x)
-#     TowerOK = {}
-#
-#     for base in param.keys():
-#         xc = int(round(param[base]['xc'] * 100, 0))
-#         yc = int(round(param[base]['yc'] * 100, 0))
-#         angle = int(round(param[base]['angle'] / 10, 0))
-#         SF = 0
-#         Area = 0
-#         TowerOK[base] = PlayGround[BldIndex[base]]['Space'][xc,yc,angle,SF,angle]
-#
-#         # TowerOK[base] = MakeTower.checkTower(PlayGround[BldIndex[base]], x=param[base]['xc'], y=param[base]['yc'],
-#         #                                      height=param[base]['height'],area=param[base]['area'],
-#         #                                         shapeF=param[base]['shapeF'], angle=param[base]['angle'])
-#     #TowerOK should all be True and only True
-#     print([val for val in TowerOK if TowerOK[val]==True])
-#     Towertest = sum([-1000 if TowerOK[val] == False else 1 for val in TowerOK])
-#
-#     #another constraint would be that the hieght shall a multiple of 3
-#     # to be implemented later !
-#     return [Towertest]
-#
+def constraints(x):
+    #this function gives the constraints to each parameter to be tuned
+    #variable have their own limits given in the bounds
+    #other constrains can be given here as function using the global vector of parameter x
+    #the below proposed constrain is to be above a minimum of total floor are
+    # the value if 110 000 square meter is proposed (to host at least 1000 family)
+    #as tower can have different height, the constrains is expresse on a volume of 3*110 000 cube meter
+    #more should also lead to more shadowing effect,so we'llk see how the process is optimised
+    param = grabParameters(x)
+    TowerOK = {}
+    totVol = 0
+    for base in param.keys():
+        height = round(param[base]['height'] / 3, 0)
+        area = getTheClosestFromDict(param[base]['area'], PlayGround[BldIndex[base]]['SpaceNew'])
+        totVol += height*area
+    return [totVol-3*250000]
+
 def check4Values(Bld):
     values = list(Bld.keys())
     valuesCheck = [0]*len(values)
@@ -132,31 +121,28 @@ def getTheClosestFromDict(var,Bld):
     return values[valdiff.index(min(valdiff))]
 
 
-def CostFunction(x,*args):
+def CostFunction(x):
     # this cost function consists in launching MUBES for the entire set of buildings,
     # grab the results afterward and compute the total energy needs at the district scale and the solar radiation from
     # window in total and for each building
     # the x vectore consist in all the paremter specified to be tuned.
     # the first thing is to compute the new tower out if these
     # with runMUBES.py, the entire geojson file given will be considered and extra tower from the UpperTowerfile compute
-    # if constraints(x, *args)[0] <0:
-    #     return 1e9
-    # print('Youhou')
     currentPath = os.getcwd()
     param = grabParametersnew(x)
     UpperTower = {}
+    totVol = 0
     for base in param.keys():
-        if BldIndex[base] == '3':
-            tata = 0
         #lets fod the closest surface first
-        heigth = param[base]['height']
+        height = round(param[base]['height']/3,0)
         area = getTheClosestFromDict(param[base]['area'],PlayGround[BldIndex[base]]['SpaceNew'])
         ShapeFact = getTheClosestFromDict(param[base]['shapeF'],PlayGround[BldIndex[base]]['SpaceNew'][area])
         angle = getTheClosestFromDict(param[base]['angle'],PlayGround[BldIndex[base]]['SpaceNew'][area][ShapeFact])
         locidx = getTheClosestFromDict(param[base]['loc'],PlayGround[BldIndex[base]]['SpaceNew'][area][ShapeFact][angle])
         loc = PlayGround[BldIndex[base]]['SpaceNew'][area][ShapeFact][angle][int(locidx)]
         UpperTower[BldIndex[base]] = checkTowerLocation(PlayGround[BldIndex[base]], x=loc[0]/100,y=loc[1]/100,
-                                            height=heigth,area=area,shapeF=ShapeFact, angle=angle*10)
+                                            height=height,area=area,shapeF=ShapeFact, angle=angle*10)
+        totVol += area * height
     SaveAndWriteNew(copy.deepcopy(PlayGround),UpperTower)
     globResPath = os.path.join(os.path.dirname(MUBES_Paths), 'MUBES_SimResults', 'OptimShadowRes')
     liste = os.listdir(globResPath)
@@ -169,8 +155,11 @@ def CostFunction(x,*args):
         os.path.abspath('C:/Users/xav77/Envs/MUBES_UBEM/Scripts/python.exe'),
         os.path.join(MUBES_Paths,'ModelerFolder','runMUBES.py')
     ]
-    # cmdline.append('-CONFIG')
-    # cmdline.append('''{"2_CASE": {"0_GrlChoices" :{ "CaseName" :"'''+CaseName+'"}}}''')
+    cmdline.append('-CONFIG')
+    cmdline.append('''{"1_DATA": {"PATH_TO_DATA": "C:/Users/xav77/Documents/FAURE/DataBase/Noah/markham_v3_core_v6_no-towers.geojson"},
+            "2_CASE": {"0_GrlChoices": { "CaseName": "OptimShadow","Verbose" : false,"DebugMode": false},"2_AdvancedChoices": {"ExtraTowerFile":
+            "''' + str(os.path.join(MUBES_Paths,'ModelerFolder','UpperTower.json')).replace('\\', '/') + '"}},"3_SIM": {"1_WeatherData": {"WeatherDataFile":\
+            "WeatherData/CAN_ON_Toronto.716240_CWEC.epw", "Latitude": 43.67,"Longitude": -79.63,"Time_Zone": -5.0,"Elevation": 173.0}}}''')
     check_call(cmdline, cwd=os.path.join(MUBES_Paths,'ModelerFolder'))
     Res_Path = os.path.join(os.path.dirname(MUBES_Paths),'MUBES_SimResults','OptimShadow','Sim_Results')
     extraVar = ['HeatedArea'] #some toher could be added for the sake fo cost_function
@@ -180,10 +169,42 @@ def CostFunction(x,*args):
         TotalSolar += sum(bld['Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area'])
     globalCostVar = 1e9/(TotalSolar)
     shutil.copyfile(os.path.join(MUBES_Paths,'ModelerFolder','UpperTower.json'), os.path.join(globResPath,'UpperTower'+str(nbfile)+'.json'))
+    shutil.copyfile(os.path.join(MUBES_Paths, 'ModelerFolder', 'GlobGeoJsonImage.png'),os.path.join(globResPath, 'UpperTower' + str(nbfile) + '.png'))
     with open(os.path.join(globResPath,'CostFunctionRes.txt'), 'a') as f:
-        f.write(str(globalCostVar)+'\n')
+        f.write(str(globalCostVar)+'\t'+str(totVol)+'\n')
     os.chdir(currentPath)
     return globalCostVar
+
+def makeimage():
+    globResPath = os.path.join(os.path.dirname(MUBES_Paths), 'MUBES_SimResults', 'OptimShadowRes')
+    liste = os.listdir(globResPath)
+    nbfile = 0
+    for file in liste:
+        if file[-5:] == '.json':
+            nbfile += 1
+    for i in range(nbfile):
+        cmdline = [
+            os.path.abspath('C:/Users/xav77/Envs/MUBES_UBEM/Scripts/python.exe'),
+            os.path.join(MUBES_Paths, 'ModelerFolder', 'runMUBES.py')
+        ]
+        cmdline.append('-CONFIG')
+        cmdline.append('''{"1_DATA": {"PATH_TO_DATA": "C:/Users/xav77/Documents/FAURE/DataBase/Noah/markham_v3_core_v6_no-towers.geojson"},
+        "2_CASE": {"0_GrlChoices": { "CaseName": "ForImages","MakePlotsOnly": true,"Verbose" : false,"DebugMode": false},"2_AdvancedChoices": {"ExtraTowerFile":
+        "'''+str(os.path.join(globResPath,'UpperTower'+str(i)+'.json')).replace('\\','/')+'"}}}''')
+        check_call(cmdline, cwd=os.path.join(MUBES_Paths, 'ModelerFolder'))
+        shutil.copyfile(os.path.join(MUBES_Paths,'ModelerFolder','GlobGeoJsonImage.png'), os.path.join(globResPath,'UpperTower'+str(i)+'.png'))
+
+def makeMovie():
+    globResPath = os.path.join(os.path.dirname(MUBES_Paths), 'MUBES_SimResults', 'OptimShadowRes')
+    import moviepy.video.io.ImageSequenceClip
+    image_folder = 'folder_with_images'
+    fps = 5
+
+    image_files = [os.path.join(image_folder, img)
+                   for img in os.listdir(image_folder)
+                   if img.endswith(".png")]
+    clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(image_files, fps=fps)
+    clip.write_videofile('my_video.mp4')
 
 def checkTowerLocation(Bld,x=0.5,y=0.5,height=9,area=500,shapeF = 2,angle = 0):
     X,Y = makeGlobCoord(x,y,Bld) #centroid of the tower on the base
@@ -237,9 +258,10 @@ def main():
         # all are normalized between 0 and 1
             lowerBounds.append(0)
             upperBounds.append(1)
-    #solution = pyswarm.pso(CostFunction,lowerBounds,upperBounds,f_ieqcons=constraints,maxiter = 1000)
-    solution = pyswarm.pso(CostFunction, lowerBounds, upperBounds, maxiter=1000)
+    solution = pyswarm.pso(CostFunction,lowerBounds,upperBounds,f_ieqcons=constraints,maxiter = 1000)
+    #solution = pyswarm.pso(CostFunction, lowerBounds, upperBounds, maxiter=1000)
     print(solution)
 
 if __name__ == '__main__':
     main()
+    makeMovie()

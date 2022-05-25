@@ -27,6 +27,59 @@ def giveReturnFromPool(results):
     doNothing = 0
     print(results)
 
+def MakeImage():
+    MakePlotOnly = 2 if CaseChoices['MakePlotsPerBld'] else 1
+    FigCenter = []
+    WindSize = 50
+    totalsize = 0
+    offset = 0
+    cpt = '--------------------'
+    cpt1 = '                    '
+    from geomeppy import IDF
+    import pickle
+    IDF.setiddname(os.path.join(epluspath, "Energy+.idd"))
+    for ListKey in File2Launch:
+        totalsize += len(File2Launch[ListKey])
+    for nbfile, ListKey in enumerate(File2Launch):
+        GoodBld = 0
+        for file_idx, file in enumerate(File2Launch[ListKey]):
+            done = (file_idx + nbfile + 1 + offset) / totalsize
+            lastBld = True if done == 1 and nbfile + 1 == len(File2Launch) else False
+            bldName = 'Building_'+str(file['nbBuild'])+'v0'
+            IDFObj = IDF(os.path.normcase(os.path.join(SimDir, bldName+'.idf')))
+            with open(os.path.join(SimDir, bldName+'.pickle'), 'rb') as handle:
+                    LoadBld = pickle.load(handle)
+            BldObj = LoadBld['BuildData']
+            if CaseChoices['Verbose']:
+                print('Figure being completed by ' + str(round(100 * done, 1)) + ' %')
+            else:
+                print('\r', end='')
+                ptcplt = '.' if file_idx % 2 else ' '
+                msg = cpt[:int(20 * done)] + ptcplt + cpt1[int(20 * done):] + str(round(100 * done, 1))
+                print('Figure being completed by ' + msg + ' %', end='', flush=True)
+
+            if lastBld:
+                os.chdir(CurrentPath)
+                GrlFct.CleanUpLogFiles(file['SimDir'])
+                GoodBld += 1
+                print('\nFigure completed with ' + str(GoodBld) + ' out of ' + str(
+                    len(File2Launch[ListKey])) + ' buildings in total')
+            try:
+                FigCenter, WindSize = GrlFct.ManageGlobalPlots(BldObj, IDFObj, FigCenter, WindSize,
+                                                               CaseChoices['MakePlotsPerBld'], nbcase=[],
+                                                               LastBld=lastBld)
+                GoodBld += 1
+                LastBldObj = copy.deepcopy(BldObj)
+                LastIDFObj = copy.deepcopy(IDFObj)
+            except:
+                if lastBld:
+                    FigCenter, WindSize = GrlFct.ManageGlobalPlots(LastBldObj, LastIDFObj, FigCenter, WindSize,
+                                                               CaseChoices['MakePlotsPerBld'], nbcase=[],
+                                                               LastBld=lastBld)
+        offset += file_idx
+        os.chdir(CurrentPath)
+
+
 if __name__ == '__main__' :
     #Main script to launch either simulation or plot of the urban area represened in the main geojson file
     #all inputs can be given inside a yml file. If not specified in a specific yml file, value from the defaultConfig.yml file will be considered
@@ -209,6 +262,7 @@ if __name__ == '__main__' :
             pool.join()
             # now that all the files are created, we can aggregate all the log files into a single one.
             os.chdir(CurrentPath)
+            MakeImage()
             GrlFct.CleanUpLogFiles(CurrentSimDir)
             # lest create the pool and launch the simulations
             if CaseChoices['Verbose']: print(

@@ -134,6 +134,7 @@ class Building:
         SD = config['3_SIM']['2_SimuData']
         ExEn = config['3_SIM']['ExtraEnergy']
         WeatherData = config['3_SIM']['1_WeatherData']
+        ExtraTowerFile = config['2_CASE']['2_AdvancedChoices']['ExtraTowerFile']
 
         try:
             self.CRS = Buildingsfile.crs['properties']['name'] #this is the coordinates reference system for the polygons
@@ -153,7 +154,7 @@ class Building:
         self.roundVal = self.GE['VertexPrecision']
         self.AltTolerance = self.GE['AltitudeTolerance']
         self.MaxShadingDist = self.GE['MaxShadingDist']
-        DB,extraShade = self.check4UpperTowerAddition(DB)
+        DB,extraShade = self.check4UpperTowerAddition(DB,ExtraTowerFile)
         self.footprint,  self.BlocHeight, self.BlocNbFloor, self.BlocAlt, self.BlocMaxAlt = self.getfootprint(DB,LogFile,self.nbfloor,DebugMode)
         self.AggregFootprint = self.getAggregatedFootprint()
         self.RefCoord = self.getRefCoord()
@@ -192,11 +193,10 @@ class Building:
             #     else:
             #         self.setTempUpL = [50]*len(BE['setTempUpL'])
 
-    def check4UpperTowerAddition(self,DB):
-        UpperTowerFile = 'C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\mubes-ubem\\ModelerFolder\\UpperTower.json'
+    def check4UpperTowerAddition(self,DB,ExtraTowerFile):
         extraShade = {}
-        if os.path.isfile(UpperTowerFile):
-            with open(UpperTowerFile) as json_file:
+        if os.path.isfile(ExtraTowerFile):
+            with open(ExtraTowerFile) as json_file:
                 UpperTower = json.load(json_file)
             for key in UpperTower.keys():
                 if key == self.BuildID[self.BuildID['BldIDKey']] and UpperTower[key]['UpperTower']['Coord']:
