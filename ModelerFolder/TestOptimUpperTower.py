@@ -23,7 +23,7 @@ import ReadResults.Utilities as Utilities
 
 #this function will launch the optimization pso  algorithm.
 #lets first get the playground : base of building that will have an upper tower to be tuned
-file = 'C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\\mubes-ubem\\ModelerFolder\\UpperTower.pickle'
+file = 'UpperTower.pickle'
 import pickle
 with open(file, 'rb') as handle:
     PlayGround = pickle.load(handle)
@@ -134,7 +134,7 @@ def CostFunction(x):
     totVol = 0
     for base in param.keys():
         #lets fod the closest surface first
-        height = round(param[base]['height']/3,0)
+        height = param[base]['height']-param[base]['height']%3
         area = getTheClosestFromDict(param[base]['area'],PlayGround[BldIndex[base]]['SpaceNew'])
         ShapeFact = getTheClosestFromDict(param[base]['shapeF'],PlayGround[BldIndex[base]]['SpaceNew'][area])
         angle = getTheClosestFromDict(param[base]['angle'],PlayGround[BldIndex[base]]['SpaceNew'][area][ShapeFact])
@@ -152,11 +152,11 @@ def CostFunction(x):
             nbfile += 1
     CaseName = 'OptimShadow'+str(nbfile)
     cmdline = [
-        os.path.abspath('C:/Users/xav77/Envs/MUBES_UBEM/Scripts/python.exe'),
+        os.path.abspath('../venv/Scripts/python.exe'),
         os.path.join(MUBES_Paths,'ModelerFolder','runMUBES.py')
     ]
     cmdline.append('-CONFIG')
-    cmdline.append('''{"1_DATA": {"PATH_TO_DATA": "C:/Users/xav77/Documents/FAURE/DataBase/Noah/markham_v3_core_v6_no-towers.geojson"},
+    cmdline.append('''{"1_DATA": {"PATH_TO_DATA": "C:/Users/oleks/OneDrive - KTH/research/MUBES/Data/CanadaCase/markham_v3_core_v6_no-towers.geojson"},
             "2_CASE": {"0_GrlChoices": { "CaseName": "OptimShadow","Verbose" : false,"DebugMode": false},"2_AdvancedChoices": {"ExtraTowerFile":
             "''' + str(os.path.join(MUBES_Paths,'ModelerFolder','UpperTower.json')).replace('\\', '/') + '"}},"3_SIM": {"1_WeatherData": {"WeatherDataFile":\
             "WeatherData/CAN_ON_Toronto.716240_CWEC.epw", "Latitude": 43.67,"Longitude": -79.63,"Time_Zone": -5.0,"Elevation": 173.0}}}''')
