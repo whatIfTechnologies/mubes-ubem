@@ -15,6 +15,7 @@ def BuildBloc(idf,perim,bloc,bloc_coord,Height,nbstories,nbBasementstories,Basem
             coordinates=bloc_coord,
             height=Height,
             num_stories=nbstories + nbBasementstories,
+            altitude=altitude,
             # building.nbfloor+building.nbBasefloor, #it defines the numbers of zones !
             below_ground_stories=nbBasementstories,
             below_ground_storey_height=BasementstoriesHeight if nbBasementstories > 0 else 0,
@@ -288,12 +289,16 @@ def split2convex(idf,DebugMode,LogFile):
                 nbmove += 1
                 if nbmove > len(coord2split):
                     TrianglesOK = True
-                    msg = '[Warning - Convex] The splitting surface process to make them all convex failed to find all surfaces above 0.1m2...\n'
-                    if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
+                    # msg = '[Warning - Convex] The splitting surface process to make them all convex failed to find all surfaces above 0.1m2...\n'
+                    # if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         stillleft = True
         while stillleft:
             mergeTrigle, stillleft = MergeTri(trigle)
             trigle = mergeTrigle
+        Areas = [Polygon(s).area for s in trigle]
+        if min(Areas) <= 0.1:
+            msg = '[Warning - Convex] The splitting surface process to make them all convex failed to find all surfaces above 0.1m2...\n'
+            if DebugMode: GrlFct.Write2LogFile(msg, LogFile)
         for nbi, subsurfi in enumerate(trigle):
             new_coord = []
             for nbpt in subsurfi:
