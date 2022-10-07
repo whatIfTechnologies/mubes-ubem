@@ -1,5 +1,4 @@
 0_APP:
-    PATH_TO_ENERGYPLUS: C:/EnergyPlusV9-1-0                                      #[Str] this is for energyplus.exe path
     PATH_TO_RESULTS: ../examples                                   #[Str] this is the main folder where the results will be stored. it will be created if not exists
 1_DATA:
     PATH_TO_DATA : ../examples/minneberg/Minneberg_Buildings.geojson               #[Str] Input file or folder in case of several files

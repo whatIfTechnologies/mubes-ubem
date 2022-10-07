@@ -76,6 +76,7 @@ def ZoneLoad(idf, zone, LoadSchedule, building, isfile, ZoningMultiplier):
         'ELECTRICEQUIPMENT',
         Name = zone.Name+'Load',
         Zone_or_ZoneList_Name = zone.Name,
+        Zone_or_ZoneList_or_Space_or_SpaceList_Name = zone.Name, #this is because E+ changed the above input name by this one in new versions
         Schedule_Name = LoadSchedule,
         Design_Level_Calculation_Method = 'Watts/Area',
         #Design_Level = floor_area/100 if isfile else building.IntLoad, #is a multiplier. this means that the file value will be the full zone's load in W
@@ -148,6 +149,7 @@ def CreateEnvLeakage(idf, zone, building, ExtWallArea):
         "ZONEINFILTRATION:FLOWCOEFFICIENT",
         Name=zone.Name+'Leak',
         Zone_Name = zone.Name,
+        Zone_or_Space_Name = zone.Name,# this is because E+ changed the above input name by this one in new versions
         Schedule_Name='AlwaysON',
         Flow_Coefficient= FlowCoef,
         Stack_Coefficient= StackCoefVal,
@@ -163,6 +165,7 @@ def CreateBasementLeakage(idf, zone, ACH):
         "ZONEINFILTRATION:DESIGNFLOWRATE",
         Name=zone.Name+'Leak',
         Zone_or_ZoneList_Name = zone.Name,
+        Zone_or_ZoneList_or_Space_or_SpaceList_Name=zone.Name,# this is because E+ changed the above input name by this one in new versions
         Schedule_Name='AlwaysON',
         Design_Flow_Rate_Calculation_Method = 'AirChanges/Hour',
         Air_Changes_per_Hour = ACH,
@@ -197,6 +200,7 @@ def ZoneFreeCooling(idf,zone,building,schedule):
         "ZONEVENTILATION:DESIGNFLOWRATE",
         Name=zone.Name + 'FreeCool',
         Zone_or_ZoneList_Name=zone.Name,
+        Zone_or_ZoneList_or_Space_or_SpaceList_Name=zone.Name,# this is because E+ changed the above input name by this one in new versions
         Schedule_Name=schedule,
         Design_Flow_Rate_Calculation_Method = 'AirChanges/Hour',
         Air_Changes_per_Hour = building.ACH_freecool,

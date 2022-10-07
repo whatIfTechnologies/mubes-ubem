@@ -339,22 +339,29 @@ def Read_Outputhtml(CaseName):
             Opaque_exterior = htables[i][1][1:]
         elif htables[i][0] in 'Exterior Fenestration':
             Windows_exterior = htables[i][1][1:]
+        elif htables[i][0] in 'Window-Wall Ratio':
+            Envelope_idx = i
+        elif htables[i][0] in 'Zone Summary':
+            Zone_Summary_idx = i
     EndUsesIdx = 3
     ExtSurf = [name[0] for name in Opaque_exterior if 'WALL' in name[1]]
     ExtWin = [name[0] for name in Windows_exterior]
     ExtNames = ExtSurf+ExtWin
     Res = {}
-    #grab the building Shape FActor
-    Envelope = htables[13][1][2][1]
-    gotit = False
-    ii = 0
-    while not gotit:
-        if 'Conditioned Total' in htables[16][1][ii][0]:
-            Volume = htables[16][1][ii][4]
-            gotit = True
-        else:
-            ii += 1
-    ShapeFactor= Envelope / Volume
+    # #grab the building Shape FActor
+    #the index table has changed so some further development should be done to consider all cases to grab external envelope and volume
+    # Envelope = htables[Envelope_idx][1][2][1]
+    # gotit = False
+    # ii = 0
+    # while not gotit:
+    #     if 'Conditioned Total' in htables[Zone_Summary_idx][1][ii][0]:
+    #         Volume = htables[Zone_Summary_idx][1][ii][4]
+    #         gotit = True
+    #     else:
+    #         ii += 1
+    # ShapeFactor= Envelope / Volume
+    Envelope = 0
+    Volume = 0
 
     for key in range(len(htables[EndUsesIdx][1][1:-2])):
         Res[htables[EndUsesIdx][1][key+1][0]] = {}

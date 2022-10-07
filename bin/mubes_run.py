@@ -4,7 +4,7 @@
 import os
 import sys
 # #add the required path for geomeppy special branch
-path2addgeom = 'C:\\Users\\xav77\\Documents\\FAURE\\prgm_python\\UrbanT\\Eplus4Mubes\geomeppy'
+path2addgeom = 'C:\\Users\\xf245257\\Documents\\Faure\\prgm_python\\geomeppy'
 #path2addgeom = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())),'geomeppy')
 sys.path.append(path2addgeom)
 #add the reauired path for all the above folder

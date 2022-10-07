@@ -1,5 +1,4 @@
 0_APP:
-    PATH_TO_ENERGYPLUS: C:/EnergyPlusV9-1-0                                      #[Str] this is for energyplus.exe path
     PATH_TO_RESULTS: ../examples                                   #[Str] this is the main folder where the results will be stored. it will be created if not exists
     PATH_TO_ENERGYPLUSFMUKit : ../../../FMUsKit/EnergyPlusToFMU-v3.1.0          #[Str] this is the path to the EnergyPöus FMUL toolkit
 1_DATA:

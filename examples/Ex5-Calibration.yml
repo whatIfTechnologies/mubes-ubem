@@ -1,5 +1,4 @@
 0_APP:
-    PATH_TO_ENERGYPLUS: C:/EnergyPlusV9-1-0                                      #[Str] this is for energyplus.exe path
     PATH_TO_RESULTS: ../examples                                   #[Str] this is the main folder where the results will be stored. it will be created if not exists
     PATH_TO_ENERGYPLUSFMUKit : ../../../FMUsKit/EnergyPlusToFMU-v3.1.0          #[Str] this is the path to the EnergyPöus FMUL toolkit
 1_DATA:
@@ -22,11 +21,11 @@
         Bounds: [[ 0.2,0.4 ],[ 0.5,1.6 ],[ 18,22 ],[ 0.7,2 ],[ 0.1,0.3 ],[ 0.2,0.4 ] ]
         BoundsLim: [[ 0.05,0.7 ],[ 0.2,4 ],[ 15,25 ],[ 0.5,4 ],[ 0.05,0.9 ],[ 0.05,0.9 ] ]
         ParamMethods : [ "Uniform","Normal","Triangular","Normal","Normal","Normal"]                    #[List of Str] probabilistic law from which LHS will be generated (one for each parameter in VarName2Change. Can be 'Uniform', 'Normal', 'Triangular'. if 'Linear' : constant increase is ensure along the bounds
-        NbRuns : 200                         #[Int] sample size for parametric simulation
+        NbRuns : 20                         #[Int] sample size for parametric simulation
     2_AdvancedChoices :
         Calibration : True                     #[Bool] if calibration process is desired to be launched (several other inputs are required
         CalibTimeBasis : 'YearlyBasis'                     #[Str] can currently be either 'MonthlyBasis','WeeklyBasis','YearlyBasis'.
-        MeasurePath4Calibration : C:\Users\xav77\Documents\FAURE\prgm_python\UrbanT\Eplus4Mubes\mubes-ubem\examples\minneberg\DataForCalibration            #[Str] path to the measured data. File names currently need to quite specific. Under development for full deployment
+        MeasurePath4Calibration : ..\examples\minneberg\DataForCalibration            #[Str] path to the measured data. File names currently need to quite specific. Under development for full deployment
 
 3_SIM :
     #files are needed to be located in the eather folder of EnergyPlus asthe same path is used afterward to launch the simulation
