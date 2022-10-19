@@ -170,7 +170,16 @@ def LaunchProcess(SimDir,FirstRun,TotNbRun,currentRun,keyPath,nbcase,CorePerim,F
     try:
         # start = time.time()
         GrlFct.setEnvelopeLevel(idf, building)
-        # end = time.time()
+        #it's time to catch all the surface name facing outside
+        allSurf = idf.getsurfaces()+idf.getsubsurfaces()
+        for surf in allSurf:
+            if surf.Surface_Type == 'Window':
+                if (surf.azimuth > 60 and surf.azimuth < 300):
+                    building.surfOutName.append(surf.Name.upper())
+            elif surf.Outside_Boundary_Condition == 'outdoors':
+                if surf.Surface_Type == 'roof': building.surfOutName.append(surf.Name.upper())
+                elif surf.azimuth > 60 and surf.azimuth < 300: building.surfOutName.append(surf.Name.upper())
+                # end = time.time()
         # print('[Time Report] : The setEnvelopeLevel took : ', round(end - start, 2), ' sec')
     except:
         msg = '[Error] The setEnvelopeLevel failed...\n'

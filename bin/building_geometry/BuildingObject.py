@@ -138,6 +138,7 @@ class Building:
         SD = config['3_SIM']['2_SimuData']
         ExEn = config['3_SIM']['ExtraEnergy']
         WeatherData = config['3_SIM']['1_WeatherData']
+        ExtraTowerFile = config['2_CASE']['2_AdvancedChoices']['ExtraTowerFile']
 
         try:
             self.CRS = Buildingsfile.crs['properties']['name'] #this is the coordinates reference system for the polygons
@@ -147,6 +148,7 @@ class Building:
         self.getSimData(SD)
         self.getSimData(WeatherData)
         self.name = name
+        self.surfOutName = [] #this attribute is further append by all the names facings outside for post-treatment
         self.BuildingFilePath = BuildingFilePath
         self.BuildID = self.getBuildID(DB,LogFile)
         self.Multipolygon = self.getMultipolygon(DB)
@@ -157,6 +159,7 @@ class Building:
         self.roundVal = self.GE['VertexPrecision']
         self.AltTolerance = self.GE['AltitudeTolerance']
         self.MaxShadingDist = self.GE['MaxShadingDist']
+        DB, extraShade = self.check4UpperTowerAddition(DB, ExtraTowerFile)
         self.footprint,  self.BlocHeight, self.BlocNbFloor, self.BlocAlt, self.BlocMaxAlt,self.BlocAltMatches = self.getfootprint(DB,LogFile,self.nbfloor,DebugMode)
         self.AggregFootprint = self.getAggregatedFootprint()
         self.RefCoord = self.getRefCoord()
@@ -167,6 +170,7 @@ class Building:
         self.EPHeatedArea = self.getEPHeatedArea(LogFile,DebugMode)
         self.AdjacentWalls = [] #this will be appended in the getshade function if any present
         self.shades = self.getshade(nbcase, DataBaseInput,LogFile, PlotOnly=PlotOnly,DebugMode=DebugMode)
+        self.AddExtraShade(extraShade)
         self.Materials = config['3_SIM']['BaseMaterial']
         self.InternalMass = config['3_SIM']['InternalMass']
         self.MakeRelativeCoord(roundfactor = 4)# we need to convert into local coordinate in order to compute adjacencies with more precision than keeping thousand of km for x and y
@@ -194,7 +198,30 @@ class Building:
             #     else:
             #         self.setTempUpL = [50]*len(BE['setTempUpL'])
 
-
+    def check4UpperTowerAddition(self,DB,ExtraTowerFile):
+        extraShade = {}
+        if os.path.isfile(ExtraTowerFile):
+            with open(ExtraTowerFile) as json_file:
+                UpperTower = json.load(json_file)
+            for key in UpperTower.keys():
+                if key == self.BuildID[self.BuildID['BldIDKey']] and UpperTower[key]['UpperTower']['Coord']:
+                    DB.geometry.coordinates.append(UpperTower[key]['UpperTower']['Coord'])
+                    DB.geometry.coordinates.append(UpperTower[key]['UpperTower']['Coord'])
+                    DB.geometry.poly3rdcoord.append(UpperTower[key]['TowerAlt'])
+                    DB.geometry.poly3rdcoord.append(UpperTower[key]['TowerAlt']+UpperTower[key]['UpperTower']['Height'])
+                else:
+                    for idx, node in enumerate(UpperTower[key]['UpperTower']['Coord']):
+                        extraShade['TowerId'+str(key)+'_surf'+str(idx)] = {}
+                        node1 = UpperTower[key]['UpperTower']['Coord'][(idx+1)%len(UpperTower[key]['UpperTower']['Coord'])]
+                        extraShade['TowerId'+str(key)+'_surf'+str(idx)]['Vertex'] = [node,node1]
+                        extraShade['TowerId'+str(key)+'_surf'+str(idx)]['height'] = UpperTower[key]['TowerAlt']+UpperTower[key]['UpperTower']['Height']
+                        extraShade['TowerId' + str(key) + '_surf' + str(idx)]['distance'] = 10
+        return DB,extraShade
+    def AddExtraShade(self,extraShade):
+        for key in extraShade:
+            self.shades[key] = {}
+            for subkey in extraShade[key]:
+                self.shades[key][subkey] = extraShade[key][subkey]
     def MakeRelativeCoord(self,roundfactor= 8):
         # we need to convert the reference coordinate to local because precision is needed for boundary conditions definition (computing distances bewteen walls):
         newfoot = []
@@ -317,7 +344,7 @@ class Building:
         if not BuildID['BldIDKey']:
             BuildID['BldIDKey'] = 'NoBldID'
             BuildID['NoBldID'] = 'NoBldID'
-        else: BuildID[BuildID['BldIDKey']] = Id
+        else: BuildID[BuildID['BldIDKey']] = str(Id)
         msg = '[Bld ID] '+ 'BldIDKey'+' : ' + str(BuildID['BldIDKey']) + '\n'
         GrlFct.Write2LogFile(msg, LogFile)
         msg = '[Bld ID] '+ str(BuildID['BldIDKey'])+' : ' + str(BuildID[BuildID['BldIDKey']]) + '\n'

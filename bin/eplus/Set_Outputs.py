@@ -242,8 +242,14 @@ def Read_OutputsEso(CaseName,ExtSurfNames, ZoneOutput):
     res ={}
     for idx in eso.dd.variables.keys():
         currentData = eso.dd.variables[idx]
-        if 'Surface' in currentData[2] and currentData[1] not in ExtSurfNames:
-            continue
+        if 'Surface' in currentData[2]:
+            if currentData[1] not in ExtSurfNames:
+                continue
+            else:
+                if 'ROOF' in currentData[1]:
+                    currentData[2] += ' On Roofs'
+                else:
+                    currentData[2] += ' On Vertical Walls'
         if currentData[1].find('STOREY')>0:
             try:
                 nb = int(currentData[1][currentData[1].find('STOREY')+6:])

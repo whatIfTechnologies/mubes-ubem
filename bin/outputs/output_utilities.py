@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 import core.GeneralFunctions as GrlFct
+import building_geometry.BuildingObject as BuildingObject
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn import metrics

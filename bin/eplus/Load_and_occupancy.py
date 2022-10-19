@@ -63,6 +63,7 @@ def create_Occupant(idf, zone, OccScheduleName, ActScheduleName,NbPeople):
         'PEOPLE',
         Name = zone.Name+' Occ',
         Zone_or_ZoneList_Name = zone.Name,
+        Zone_or_ZoneList_or_Space_or_SpaceList_Name=zone.Name, # this is because E+ changed the above input name by this one in new versions
         Number_of_People_Schedule_Name = OccScheduleName,
         Number_of_People = NbPeople,
         Activity_Level_Schedule_Name = ActScheduleName,

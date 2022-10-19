@@ -195,17 +195,23 @@ def grabBuildingsId(IdsFile):
 def getConfig(localDir,App = ''):
     if App == 'Shadowing':
         ConfigFromArg, Case2Launch, ShadeLim = Read_Arguments(App = App)
+        config = read_yaml(os.path.join(os.path.dirname(os.path.dirname(localDir)), 'default', 'config', 'DefaultConfig.yml'))
+        try: env = read_yaml(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), 'default','config', 'env.yml'))
+        except: env = read_yaml(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), 'default','config', 'env.default.yml'))
     else:
         ConfigFromArg, Case2Launch = Read_Arguments(App = App)
-    #first the default yml file is read to define the config dictionnary as well as the corresponding unit
-    config = read_yaml(os.path.join(os.path.dirname(os.getcwd()),'default','config','DefaultConfig.yml'))
-    #lets get the environment variable and try if there is a new made one
-    try: env = read_yaml(os.path.join(os.path.dirname(os.getcwd()), 'default','config', 'env.yml'))
-    except: env = read_yaml(os.path.join(os.path.dirname(os.getcwd()), 'default','config', 'env.default.yml'))
+        #first the default yml file is read to define the config dictionnary as well as the corresponding unit
+        config = read_yaml(os.path.join(os.path.dirname(os.getcwd()),'default','config','DefaultConfig.yml'))
+        #lets get the environment variable and try if there is a new made one
+        try: env = read_yaml(os.path.join(os.path.dirname(os.getcwd()), 'default','config', 'env.yml'))
+        except: env = read_yaml(os.path.join(os.path.dirname(os.getcwd()), 'default','config', 'env.default.yml'))
     # make the change for the env variable
     config, msg = ChangeConfigOption(config, env)
     if msg: print(msg)
-    configUnit = read_yaml(os.path.join(os.path.dirname(os.getcwd()), 'default','config', 'DefaultConfigKeyUnit.yml'))
+    if App == 'Shadowing':
+        configUnit = read_yaml(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), 'default','config', 'DefaultConfigKeyUnit.yml'))
+    else:
+        configUnit = read_yaml(os.path.join(os.path.dirname(os.getcwd()), 'default', 'config', 'DefaultConfigKeyUnit.yml'))
     geojsonfile = False
     if Case2Launch:
         #this case is if a folder Name has been given, the local yml file will be read to make the config dictionary

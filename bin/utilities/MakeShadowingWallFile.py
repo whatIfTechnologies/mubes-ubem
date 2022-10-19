@@ -11,14 +11,14 @@ import shutil
 path2addgeom = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())),'geomeppy')
 sys.path.append(path2addgeom)
 #add the reauired path for all the above folder
-sys.path.append('..')
+sys.path.append(os.path.dirname(os.getcwd()))
 MUBES_Paths = os.path.normcase(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), 'MUBES_UBEM'))
 sys.path.append(MUBES_Paths)
 
-import CoreFiles.GeneralFunctions as GrlFct
+import core.GeneralFunctions as GrlFct
 from geomeppy.geom.polygons import Polygon2D
-import CoreFiles.setConfig as setConfig
-from BuildObject.BuildingObject import Building
+import core.setConfig as setConfig
+from building_geometry.BuildingObject import Building
 import numpy as np
 import json
 from shapely.geometry import Polygon, LineString, Point
@@ -412,7 +412,7 @@ def SaveAndWrite(Matches,Data):
 
 if __name__ == '__main__' :
     MainPath = os.getcwd()
-    GlobKey, config, ShadeLim = setConfig.getConfig(App = 'Shadowing')
+    GlobKey, config, ShadeLim = setConfig.getConfig(MainPath,App = 'Shadowing')
     WithBackSide = True
     ComputAllSurf = False #default is compute with backside surfaces
     if ShadeLim == 'AllSurf':

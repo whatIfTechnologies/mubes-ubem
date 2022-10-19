@@ -30,7 +30,7 @@
         ParamMethods : []                       #[List of Str] probabilistic law from which LHS will be generated (one for each parameter in VarName2Change. Can be 'Uniform', 'Normal', 'Triangular'. if 'Linear' : constant increase is ensure along the bounds
         NbRuns : 1                              #[Int] sample size for parametric simulation (number of runs to make for each building)
         CorePerim : False                       #[Bool] True : core and perimeter zone thermal modelling
-        FloorZoning : True                      #[Bool] True : each floor is considered as a zone or for core zone construction
+        FloorZoning : False                      #[Bool] True : each floor is considered as a zone or for core zone construction
     2_AdvancedChoices :
         API : False                             #[Bool] in case the simulation is launched trough an API. Option under development but concerns mainely the output format
         CreateFMU : False                       #[Bool] True: creates FMU for each building specified in the BldID. No simulation is launched afterward. FMU will be found in the CaseName folder
@@ -45,6 +45,7 @@
         RefBuildNum : None                      #[Int] building number (order of the GeoJson file) taken as a reference to pick other within the RefPerimeter distance. useful for large DataSets if None it will be ignored
         RefPerimeter : 500                      #[int] Distance threshold for which all building farer then this threshold for the RefBuildNum are ignored
         MakePolygonPlots : False                #[Bool]if set to True, it will make a figure with 2D polygons of the set of buildings considered in the geojson file
+        ExtraTowerFile : ''                     #name of the json file that has all the upper tower and shades that are to be added
 3_SIM :
     #files are needed to be located in the weather folder of EnergyPlus as the same path is used afterward to launch the simulation
     1_WeatherData :
@@ -59,7 +60,7 @@
         Begin_Month : 1                         #[Int]
         End_Day_of_Month : 31                   #[Int]
         End_Month : 12                          #[Int]
-        SaveLogFiles : False                    #[Bool] True: computing folder is not removed thus all energyplus outputs files are preserved
+        SaveLogFiles : True                    #[Bool] True: computing folder is not removed thus all energyplus outputs files are preserved
 
     #this dict gives information on occupancy times each day. If DCV = True, the airflow will follow the number of occupant
     # and the schedule. if not it will be based only on the extra airflow rate but without schedule (all the time)
@@ -188,7 +189,7 @@
     #the other one contains for each shading surface id the vertex point and the building Id in order to catch the height of it.
     #to externalize as much as possible, these elements are reported in the dict below
     GeomElement :
-        BuildIDKey : ['50A_UUID', 'objectid','OBJECTID','gid','igntop202103_bat_l_id']   #[List of Str] key word that can be used for the building ID
+        BuildIDKey : ['50A_UUID', 'objectid','OBJECTID','gid','igntop202103_bat_l_id','bldId']   #[List of Str] key word that can be used for the building ID
         FormularIdKey : 'FormularId'            #[Str] key word for the the EPC correspondence
         ShadingIdKey : 'vaggid'                 #[Str] key word for the shadowing wall given in the geojson file only
         BuildingIdKey : 'byggnadsid'            #[Str] key word for the owner of the shadowing wall given in the geojson file only
