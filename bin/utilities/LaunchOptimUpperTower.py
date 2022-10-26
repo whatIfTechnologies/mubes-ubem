@@ -82,12 +82,12 @@ def constraints(x):
     #more should also lead to more shadowing effect,so we'llk see how the process is optimised
     param = grabParameters(x)
     TowerOK = {}
-    totVol = 0
+    totfloor = 0
     for base in param.keys():
-        height = round(param[base]['height'] / 3, 0)
+        nb_floor = (param[base]['height']-param[base]['height']%3)/3
         area = getTheClosestFromDict(param[base]['area'], PlayGround[BldIndex[base]]['SpaceNew'])
-        totVol += height*area
-    return [totVol-3*250000, 3*300000-totVol]
+        totfloor += nb_floor*area
+    return [totfloor-250000, 300000-totfloor]
 
 def check4Values(Bld):
     values = list(Bld.keys())
@@ -132,7 +132,7 @@ def CostFunction(x):
     currentPath = os.getcwd()
     param = grabParametersnew(x)
     UpperTower = {}
-    totVol = 0
+    totfloor = 0
     for base in param.keys():
         #lets fod the closest surface first
         height = param[base]['height']-param[base]['height']%3
@@ -143,7 +143,7 @@ def CostFunction(x):
         loc = PlayGround[BldIndex[base]]['SpaceNew'][area][ShapeFact][angle][int(locidx)]
         UpperTower[BldIndex[base]] = checkTowerLocation(PlayGround[BldIndex[base]], x=loc[0]/100,y=loc[1]/100,
                                                         height=height,area=area,shapeF=ShapeFact, angle=angle*10)
-        totVol += area * height
+        totfloor += area * height/3
     SaveAndWriteNew(copy.deepcopy(PlayGround),UpperTower)
     globResPath = os.path.join(Path2results, 'OptimShadowRes')
     if not os.path.exists(globResPath):
@@ -168,20 +168,44 @@ def CostFunction(x):
     extraVar = ['HeatedArea'] #some toher could be added for the sake fo cost_function
     Res = Utilities.GetData(Res_Path, extraVar)
     SolarBeamOnRoofs = 0
+    SolarBeamOnRoofsList = []
     SolarBeamOnWalls = 0
+    SolarBeamOnWallsList = []
     SolarOnRoofs = 0
+    SolarOnRoofsList = []
     SolarOnWalls = 0
-    for bld in Res['HeatedArea']:
+    SolarOnWallsList = []
+    for idx,bld in enumerate(Res['HeatedArea']):
         SolarBeamOnRoofs += sum(bld['Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area On Roofs'])
         SolarBeamOnWalls += sum(bld['Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area On Vertical Walls'])
         SolarOnRoofs += sum(bld['Data_Surface Outside Face Incident Solar Radiation Rate per Area On Roofs'])
         SolarOnWalls += sum(bld['Data_Surface Outside Face Incident Solar Radiation Rate per Area On Vertical Walls'])
+        SolarBeamOnRoofsList.append(sum(bld['Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area On Roofs']))
+        SolarBeamOnWallsList.append(sum(bld['Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area On Vertical Walls']))
+        SolarOnRoofsList.append(sum(bld['Data_Surface Outside Face Incident Solar Radiation Rate per Area On Roofs']))
+        SolarOnWallsList.append(sum(bld['Data_Surface Outside Face Incident Solar Radiation Rate per Area On Vertical Walls']))
+
     globalCostVar = 1e9/(SolarOnRoofs+SolarOnWalls)
     shutil.copyfile(os.path.join(MUBES_Paths,'bin','UpperTower.json'), os.path.join(globResPath,'UpperTower'+str(nbfile)+'.json'))
     with open(os.path.join(globResPath, 'CostFunctionRes.txt'), 'a') as f:
-        f.write(str(globalCostVar) + '\t' + str(totVol) + '\t' + str(SolarBeamOnRoofs) + '\t' + str(SolarOnRoofs) + '\t' + str(
+        f.write(str(globalCostVar) + '\t' + str(totfloor) + '\t' + str(SolarBeamOnRoofs) + '\t' + str(SolarOnRoofs) + '\t' + str(
             SolarBeamOnWalls) + '\t' + str(SolarOnWalls) + '\n')
-
+    with open(os.path.join(globResPath, 'SolarBeamOnRoofs.txt'), 'a') as f:
+        for i in SolarBeamOnRoofsList:
+            f.write(str(i) + '\t')
+        f.write( '\n')
+    with open(os.path.join(globResPath, 'SolarBeamOnWalls.txt'), 'a') as f:
+        for i in SolarBeamOnWallsList:
+            f.write(str(i) + '\t')
+        f.write( '\n')
+    with open(os.path.join(globResPath, 'SolarOnRoofs.txt'), 'a') as f:
+        for i in SolarOnRoofsList:
+            f.write(str(i) + '\t')
+        f.write( '\n')
+    with open(os.path.join(globResPath, 'SolarOnWalls.txt'), 'a') as f:
+        for i in SolarOnWallsList:
+            f.write(str(i) + '\t')
+        f.write( '\n')
     #to save an image of the case
     makeimage(nbfile)
     shutil.copyfile(os.path.join(MUBES_Paths, 'bin', 'GlobGeoJsonImage.png'),os.path.join(globResPath, 'UpperTower' + str(nbfile) + '.png'))
