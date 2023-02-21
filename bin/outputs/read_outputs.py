@@ -8,7 +8,9 @@ import numpy as np
 sys.path.append(os.path.dirname(os.getcwd()))
 import output_utilities as Utilities
 import core.setConfig as setConfig
-
+# import pickle
+from eppy.results import readhtml
+import pandas as pd
 
 # the main idea of this file is to present some way for analyzing the data.
 # some useful function are implemented in Utilities. Such as agregating the data from several simulation in one disctionary
@@ -303,6 +305,7 @@ if __name__ == '__main__' :
     TimeSerieList=[]
     TimeSerieUnit = []
     id =0
+    htmFilesPath = ''
     for idx, curPath in enumerate(path):
         print('Considering results from : '+Names4Plots[idx])
         try:
@@ -315,7 +318,129 @@ if __name__ == '__main__' :
                     if type(Res[idx]['HeatedArea'][blfRef][key])==list:
                         TimeSerieList.append(key)
                         TimeSerieUnit.append(Res[idx]['HeatedArea'][blfRef][key.replace('Data_','Unit_')])
+
+                if curPath.endswith('Sim_Results'):
+                    htmFilesPath = curPath[:-len('Sim_Results')]
+
         except: pass
+
+
+    # get outputs for Markham
+    ResSolar = [] # to collect solar results
+    ResErrors = [] # to collect list of building id's that had errors
+    ResSolar8760 = {} # to collect 8760 heating and solar gain data
+    solarRoofKey = 'Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area On Roofs'
+    solarWallKey = 'Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area On Vertical Walls'
+    numBuildings = len(Res[0]['BuildID'])
+    floorspaceTotal = 0
+    roofSolarTotal = 0
+    wallSolarTotal = 0
+    optimCheckRoofArea = 0 # for comparing against LaunchOptimUpperTower run to make sure values are the same
+    optimCheckWallArea = 0
+    # heating keys
+    # heatingKeys = [
+    #     'Data_Zone Air System Sensible Heating Energy',
+    #     'Data_Zone Air System Sensible Heating Rate',
+    #     'Data_Zone Ideal Loads Supply Air Total Heating Rate',
+    #     'Data_Zone Electric Equipment Electric Power',
+    #     ]
+    heatingKey = 'Data_Zone Ideal Loads Supply Air Total Heating Rate'
+    windowsGainKey = 'Data_Zone Windows Total Heat Gain Rate'
+
+    # import pdb; pdb.set_trace()
+
+    for idx, bld in enumerate(Res[0]['BuildID']):
+        try:
+            # summary data
+            print('gathering solar data for building: {} of {}...'.format(idx + 1, numBuildings))
+            # fname = '{}Building_{}v0/Runtbl.htm'.format(htmFilesPath, idx)
+            # GETTING ONLY BUILDING 2...
+            fname = '{}Building_2v0/Runtbl.htm'.format(htmFilesPath)
+            filehandle = open(fname, 'r',encoding='latin-1').read() # get a file handle to the html file
+            htables = readhtml.titletable(filehandle)
+            # get the exterior surfaces
+            for i in range(len(htables)):
+                if htables[i][0] in 'Opaque Exterior':
+                    Opaque_exterior = htables[i][1][1:]
+            # sum the wall areas - Gross Area [m2] is in column 5
+            wallArea = np.sum([surface[5] for surface in Opaque_exterior if 'WALL' in surface[1]])
+            ResSolar.append({
+                # building id information lookup example
+                # Res[0]['BuildID'][480] # gives a dict with bldId information
+                'BldId': bld['bldId'],
+                # footprint area lookup example
+                # Res[0]['BlocFootprintArea'][480] # gives array of bloc roof areas (which are equal to roof areas)
+                # Res[0]['HeatedArea'][idx][solarRoofKey] # gives an 8760 array of solar radiation values per area W/m2 which have already been averaged and accounted for different surface areas
+                'roofSolarInt_W_per_m2': np.mean(Res[0]['HeatedArea'][idx][solarRoofKey]),
+                'roofSolar_Wh': np.sum(Res[0]['BlocFootprintArea'][idx]) * np.sum(Res[0]['HeatedArea'][idx][solarRoofKey]),
+                'wallSolarInt_W_per_m2': np.mean(Res[0]['HeatedArea'][idx][solarWallKey]),
+                'wallSolar_Wh': wallArea * np.sum(Res[0]['HeatedArea'][idx][solarWallKey]),
+                'floorspace_m2': Res[0]['EP_Area'][idx],
+            })
+            roofSolarTotal += np.sum(Res[0]['BlocFootprintArea'][idx]) * np.sum(Res[0]['HeatedArea'][idx][solarRoofKey])
+            wallSolarTotal += wallArea * np.sum(Res[0]['HeatedArea'][idx][solarWallKey])
+            optimCheckRoofArea += np.sum(Res[0]['HeatedArea'][idx][solarRoofKey])
+            optimCheckWallArea += np.sum(Res[0]['HeatedArea'][idx][solarWallKey])
+
+            # 8760 data
+            heatingP = 'Data_Total Building Heating Power'
+            # import pdb; pdb.set_trace()
+            print('gathering 8760 data for building: {} of {}...'.format(idx + 1, numBuildings))
+            ResSolar8760['roofSolarInt_W_per_m2'] = Res[0]['HeatedArea'][idx][solarRoofKey]
+            ResSolar8760['roofSolar_Wh'] = np.array(Res[0]['HeatedArea'][idx][solarRoofKey]) * np.sum(Res[0]['BlocFootprintArea'][idx])
+            ResSolar8760['wallSolarInt_W_per_m2'] = Res[0]['HeatedArea'][idx][solarWallKey]
+            ResSolar8760['wallSolar_Wh'] = np.array(Res[0]['HeatedArea'][idx][solarWallKey]) * wallArea
+            ResSolar8760['windowGainRate_W'] = Res[0]['HeatedArea'][idx][windowsGainKey]
+            ResSolar8760['heatingRate_W'] = Res[0]['HeatedArea'][idx][heatingKey]
+
+        except:
+            ResErrors.append({
+                'BldId': bld['bldId'],
+            })
+
+    # add totals to end of list
+    ResSolar.append({
+        'BldId': 'ALL',
+        'roofSolar_Wh': roofSolarTotal,
+        'wallSolar_Wh': wallSolarTotal,
+        'floorspace_m2': np.sum(Res[0]['EP_Area']),
+    })
+
+    # add validation checks to end of list
+    ResSolar.append({
+        'BldId': 'VALIDATION',
+        'roofSolar_Wh': optimCheckRoofArea,
+        'wallSolar_Wh': optimCheckWallArea,
+    })
+
+    # solar results to csv files
+    outputFiles = [
+        (ResSolar, 'solarResults'),
+        (ResErrors, 'solarErrors'),
+        ]
+    for _file in outputFiles:
+        df = pd.DataFrame.from_dict(_file[0])
+        fname = '{}/{}.csv'.format(curPath, _file[1])
+        df.to_csv(fname, encoding='utf-8', index=False)
+
+    # 8760 output file
+    df = pd.DataFrame.from_dict(ResSolar8760)
+    fname = '{}/solarResults8760.csv'.format(curPath)
+    df.to_csv(fname, encoding='utf-8', index=False)
+
+
+    # example lookups
+
+    # the area of a bloc
+    # Res[0]['BlocFootprintArea'][480]
+    # [1498.5904588172193, 2569.9807570683215]
+
+
+
+    # the avg hourly rootop radiation
+    # np.mean(Res[0]['HeatedArea'][0]['Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area On Roofs'])
+    # len(Res[0]['HeatedArea'][0]['Data_Surface Outside Face Incident Beam Solar Radiation Rate per Area On Roofs'])
+
 
 
     # with open('ShapeFact.txt', 'w') as f:
@@ -331,11 +456,11 @@ if __name__ == '__main__' :
     AreaFig = Utilities.createMultilFig('',2,linked=False)
     plotAreaVal(Res, AreaFig, Names4Plots)
     #this one gives geometric values
-    DimFig = Utilities.createMultilFig('', 3)
-    plotDim(Res, DimFig,Names4Plots)
+    # DimFig = Utilities.createMultilFig('', 3)
+    # plotDim(Res, DimFig,Names4Plots)
     # this one gives the energy demand of heating with EPCs values
-    EnergyFig = Utilities.createMultilFig('',2,linked=False)
-    plotEnergy(Res, EnergyFig,Names4Plots)
+    # EnergyFig = Utilities.createMultilFig('',2,linked=False)
+    # plotEnergy(Res, EnergyFig,Names4Plots)
     #this one is the consumption depending on the shading distance (of course simulation should have been done before...)
     # ShadingFig = Utilities.createMultilFig('',2,linked=False)
     # plotShadingEffect(Res, ShadingFig,Names4Plots)

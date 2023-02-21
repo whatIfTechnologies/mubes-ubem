@@ -2,13 +2,21 @@
 0_APP :
     #PATH_TO_MUBES_UBEM : ../MUBES_UBEM/                #[Str] this is not currently used
     #PATH_TO_MUBES_UBEM_PYTHON : ../venv/bin/python     #[Str] this is not currently used
-    PATH_TO_ENERGYPLUS : /usr/local/EnergyPlus-9-2-0/          #[Str] this is for energyplus.exe path
-    PATH_TO_RESULTS : /home/ec2-user/working/energyplus/MUBES_SimResults/         #[Str] this is the main folder where the results will be stored. it will be created if not exists
+    # PATH_TO_ENERGYPLUS : /usr/local/EnergyPlus-9-2-0/          #[Str] this is for energyplus.exe path
+    PATH_TO_ENERGYPLUS: /Applications/EnergyPlus-9-5-0/          #[Str] this is for energyplus.exe path
+    # PATH_TO_RESULTS : /home/ec2-user/working/energyplus/MUBES_SimResults/         #[Str] this is the main folder where the results will be stored. it will be created if not exists
+    PATH_TO_RESULTS : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/MUBES_SimResults/'         #[Str] this is the main folder where the results will be stored. it will be created if not exists
+    # PATH_TO_RESULTS : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/MUBES_SimResults_SERVER/'         #[Str] this is the main folder where the results will be stored. it will be created if not exists
     PATH_TO_ENERGYPLUSFMUKit : ../../../FMUsKit/EnergyPlusToFMU-v3.1.0           #[Str] this is the path to the EnergyPöus FMUL toolkit
     
 1_DATA :
-    PATH_TO_DATA : /home/ec2-user/working/energyplus/data/markham_v5_all/      #[Str] Input file or folder in case of several files
+    # PATH_TO_DATA : /home/ec2-user/working/energyplus/data/markham_v5_all/      #[Str] Input file or folder in case of several files
     # PATH_TO_DATA : /home/ec2-user/working/energyplus/data/markham_v5_no_towers/      #[Str] Input file or folder in case of several files
+    PATH_TO_DATA : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_all'      #[Str] Input file or folder in case of several files
+    # PATH_TO_DATA : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_no_towers'      #[Str] Input file or folder in case of several files
+    # PATH_TO_DATA : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground'      #[Str] Input file or folder in case of several files
+    # PATH_TO_DATA : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_positive'      #[Str] Input file or folder in case of several files
+    # PATH_TO_DATA : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers'      #[Str] Input file or folder in case of several files
     EPSG_REF : None                             #[int], is 4326 for US East coast, 3950 for EU, some other for elsewhere, leave None if no conversion is wanted or required
 
 2_CASE :
@@ -19,9 +27,21 @@
         # CaseName : 'markham_v5_no_towers_sqm'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
         # CaseName : 'markham_v5_towers_solar_positive'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
         # CaseName : 'markham_v5_towers_solar_negative'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_towers_testplayground'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_positive'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_no_towers_run28'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_no_towers_run79'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_no_towers_run101'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_no_towers_run277'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_no_towers_run3391'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_no_towers_run1704'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_no_towers_run190'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_no_towers_run212'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_bld6_passive_no_shading'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
+        # CaseName : 'markham_v5_testplayground_bld6_passive_shading'                    #[Str] Name of the studied Case, a subfolder of this name will be created in the main folder defined in '0_APP:PATH_TO_RESULTS'
         OutputsFile : 'Outputs_Template.txt'    #[Str] Output file to identify the outputs the modeller would want and their frequency
         RefreshFolder : True                    #[Bool] True : the folder CaseName, if exist, is emptied whatever could be in it
-        MakePlotsOnly : False                   #[Bool] True : a figure will be created with the buildings specified in BldID
+        MakePlotsOnly : True                   #[Bool] True : a figure will be created with the buildings specified in BldID
         MakePlotsPerBld : False                 #[Bool] True : a figure is created for each building specified in BldID including it's shadowing surfaces (if present)
         Verbose : True                          #[Bool] True : Gives messages in the prompt window along the ongoing process
         CPUusage : 0.95                          #[Float] Factor of CPU allowed to be used during parallel computing
@@ -53,10 +73,20 @@
         MakePolygonPlots : False                #[Bool]if set to True, it will make a figure with 2D polygons of the set of buildings considered in the geojson file
         ExtraTowerFile : ''                     #name of the json file that has all the upper tower and shades that are to be added
         # ExtraTowerFile : '/home/ec2-user/working/energyplus/MUBES_SimResults/OptimShadowRes/UpperTower26.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers/UpperTower0.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers/UpperTower28.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers/UpperTower79.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers/UpperTower101.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers/UpperTower277.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_no_towers/UpperTower212.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers/UpperTower3391.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers/UpperTower1704.json'                     #name of the json file that has all the upper tower and shades that are to be added
+        # ExtraTowerFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/markham_v5_testplayground_no_towers/UpperTower190.json'                     #name of the json file that has all the upper tower and shades that are to be added
 3_SIM :
     #files are needed to be located in the weather folder of EnergyPlus as the same path is used afterward to launch the simulation
     1_WeatherData :
-        WeatherDataFile : '/home/ec2-user/working/energyplus/data/epw_weather_files/epw.CWEC_2020_ON/CAN_ON_TORONTO-INTL-A_6158731_CWEC.epw' #[Str] Need to be a epw file. This one is given because installed by default when installing EnergyPlus
+        # WeatherDataFile : '/home/ec2-user/working/energyplus/data/epw_weather_files/epw.CWEC_2020_ON/CAN_ON_TORONTO-INTL-A_6158731_CWEC.epw' #[Str] Need to be a epw file. This one is given because installed by default when installing EnergyPlus
+        WeatherDataFile : '/Users/noah/Documents/WiT SSG/Resilio/2127_markham_share/buildings modelling/ubem models/epw weather files/epw.CWEC_2020_ON/CAN_ON_TORONTO-INTL-A_6158731_CWEC.epw' #[Str] Need to be a epw file. This one is given because installed by default when installing EnergyPlus
         Latitude: 43.82                        #[Float] Latitude of the location (+ is North, - is South) [-90,+90]
         Longitude: -79.39                     #[Float] Longitude of the location (- is West, + is East [-180,180]
         Time_Zone: -4.0                        #[Float] Time relative to GMT  [-12,14]
@@ -67,7 +97,7 @@
         Begin_Month : 1                         #[Int]
         End_Day_of_Month : 31                   #[Int]
         End_Month : 12                          #[Int]
-        SaveLogFiles : False                    #[Bool] True: computing folder is not removed thus all energyplus outputs files are preserved
+        SaveLogFiles : True                    #[Bool] True: computing folder is not removed thus all energyplus outputs files are preserved
 
     #this dict gives information on occupancy times each day. If DCV = True, the airflow will follow the number of occupant
     # and the schedule. if not it will be based only on the extra airflow rate but without schedule (all the time)
